@@ -4,6 +4,10 @@
 #include <Arduino.h>
 #include <Servo.h>
 
+/*
+Класс отвечающий за работу мотора.
+Здесь происходит управленте скорость и режимами работы мотора.
+*/
 
 
 class Motor {
@@ -19,7 +23,8 @@ class Motor {
         void init(uint8_t motor_pin);
         void update();
         void setPower(uint8_t value);
-        void setMode(Mode mode);
+        void setMode(uint8_t index);
+        void switchMainMode(bool clockwice);
         String getModeName();
 
     private:

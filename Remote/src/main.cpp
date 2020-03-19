@@ -1,17 +1,19 @@
 #include <Arduino.h>
-#include <SPI.h>          // библиотека для работы с шиной SPI
-#include "nRF24L01.h"     // библиотека радиомодуля
-#include "RF24.h"         // ещё библиотека радиомодуля
+#include <SPI.h>
+#include <nRF24L01.h>
+#include <RF24.h>
+#include <GyverButton.h>
 
-RF24 radio(9, 10); // "создать" модуль на пинах 9 и 10 Для Уно
-//RF24 radio(9,53); // для Меги
+RF24 radio(9, 10);
+GButton button(2, HIGH_PULL);
 
 const uint64_t pipes[2] = { 0xF0F0F0F0E1LL, 0xF0F0F0F0D2LL };
 
 byte send_data[4];
 
+
 void setup() {
-  Serial.begin(9600); //открываем порт для связи с ПК
+  Serial.begin(9600);
 
   pinMode(A1, INPUT);
 
@@ -34,7 +36,8 @@ void setup() {
 }
 
 void loop() {
-  Serial.println(analogRead(A1));
+  button.tick();
   send_data[0] = map(analogRead(A1), 0, 1023, 0, 255);
+  send_data[1] = button.isClick();
   radio.write(&send_data, 4);
 }
