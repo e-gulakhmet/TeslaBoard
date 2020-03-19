@@ -1,14 +1,12 @@
-
 #include <Arduino.h>
 #include <SPI.h>
-#include "nRF24L01.h"
-#include "RF24.h"
-#include <Servo.h>
+#include <nRF24L01.h>
+#include <RF24.h>
 
-Servo motor;
+#include "motor.h"
 
-RF24 radio(9,10); // "создать" модуль на пинах 9 и 10 Для Уно
-//RF24 radio(9,53); // для Меги
+RF24 radio(9,10);
+Motor motor;
 
 const uint64_t pipes[2] = { 0xF0F0F0F0E1LL, 0xF0F0F0F0D2LL };
 
@@ -31,16 +29,16 @@ void setup(){
   radio.powerUp(); //начать работу
   radio.startListening();  //начинаем слушать эфир, мы приёмный модуль
 
-  motor.attach(3);
+  motor.init(3);
 }
 
 void loop() {
     byte pipeNo, gotByte[4];                          
     while( radio.available(&pipeNo)){    // слушаем эфир со всех труб
       radio.read( &gotByte, sizeof(gotByte) );         // чиатем входящий сигнал
+      motor.update();
 
       Serial.print("Recieved: "); Serial.println(gotByte[0]);
-      int val = map(gotByte[0], 0, 255, 800, 2300);
-      motor.writeMicroseconds(val);
+      motor.setPower(gotByte[0]);
    }
 }
