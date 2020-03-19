@@ -12,7 +12,9 @@ const uint64_t pipes[2] = { 0xF0F0F0F0E1LL, 0xF0F0F0F0D2LL };
 
 byte got_data[4];
 uint8_t power;
-bool double_click;
+bool butt_double_click;
+bool butt_holded;
+bool is_on = true;
 
 
 void setup(){
@@ -44,15 +46,24 @@ void loop() {
     motor.update();
 
     power = got_data[0];  // Данные о положение потенциометра
-    double_click = got_data[1]; // Была ли кнопка нажата два раза
-
-    motor.setPower(power); // Настраиваем скорость
-
-    if (double_click) { // Если кнопка на пульте была нажата два раза
+    butt_double_click = got_data[1]; // Была ли кнопка нажата два раза
+    butt_holded = got_data[2]; // Информация об удержание кнопки
+    
+    if (butt_double_click) { // Если кнопка на пульте была нажата два раза
       motor.switchMainMode(true); // Выбераем следущий режим
-    }      
+    }
+
+    if (butt_holded) { // Если кнопка была зажата в течении 1 секунды
+      is_on = !is_on; // Выключаем или включаем управление мотором
+    }
+
+    if (is_on) {
+      motor.setPower(power); // Настраиваем скорость
+    }
+    else{
+      motor.setMode(-1); // Выключаем мотор
+    }
   }
   
   // Если данные от передатчика не приходят
-  motor.setPower(0); // Выключаем мотор
 }

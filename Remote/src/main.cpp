@@ -37,8 +37,9 @@ void setup() {
 
 void loop() {
   button.tick();
-  send_data[0] = map(analogRead(A1), 0, 1023, 0, 255);
-  send_data[1] = button.isDouble();
+  send_data[0] = map(analogRead(A1), 0, 1023, 0, 255); // Данные о положении потенциометра
+  send_data[1] = button.isDouble(); // Двойное нажатие кнопки
+  send_data[2] = button.isHolded(); // Если кнопка была нажата более 1 секунды
 
   radio.write(&send_data, 4);
 }

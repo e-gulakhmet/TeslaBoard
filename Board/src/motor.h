@@ -15,6 +15,7 @@ class Motor {
         Motor();
 
         typedef enum {
+            mOff = -1,
             mComfort,
             mNormal,
             mSport
@@ -30,7 +31,7 @@ class Motor {
     private:
         uint8_t motor_pin_;
         uint8_t power_;
-        String mode_name_[3] = {"Comfort", "Normal", "Sport"};
+        String mode_name_[4] = {"Off", "Comfort", "Normal", "Sport"};
         Mode mode_;
         Servo motor_;
 };

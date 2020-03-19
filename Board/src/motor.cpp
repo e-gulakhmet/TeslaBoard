@@ -13,7 +13,7 @@ Motor::Motor()
 void Motor::init(uint8_t motor_pin) {
     motor_pin_ = motor_pin;
     motor_.attach(motor_pin_);
-    
+
     motor_.writeMicroseconds(2300);
     delay(2000);
     motor_.writeMicroseconds(800);
@@ -24,6 +24,10 @@ void Motor::init(uint8_t motor_pin) {
 
 void Motor::update() {
     switch (mode_) {
+        case mOff:{
+            motor_.writeMicroseconds(800);
+        } break;
+
         case mComfort:{
             int val = map(power_, 0, 255, 800, 1200);
             motor_.writeMicroseconds(val);
@@ -77,7 +81,7 @@ void Motor::switchMainMode(bool clockwice) { // Переключение реж�
 
         n += clockwice ? 1 : -1; // Если по часовой стрелке, то ставим следующий
 
-        if ( n > 2) {
+        if ( n > 3) {
             n = 0;
         }
         if ( n < 0 ) {
