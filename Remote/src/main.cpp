@@ -38,6 +38,7 @@ void setup() {
 void loop() {
   button.tick();
   send_data[0] = map(analogRead(A1), 0, 1023, 0, 255);
-  send_data[1] = button.isClick();
+  send_data[1] = button.isDouble();
+
   radio.write(&send_data, 4);
 }

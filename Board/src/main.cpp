@@ -12,6 +12,7 @@ const uint64_t pipes[2] = { 0xF0F0F0F0E1LL, 0xF0F0F0F0D2LL };
 
 byte got_data[4];
 uint8_t power;
+bool double_click;
 
 
 void setup(){
@@ -37,19 +38,21 @@ void setup(){
 
 
 void loop() {
-  
-    byte pipeNo;
-    while(radio.available(&pipeNo)){    // слушаем эфир со всех труб
-      radio.read( &got_data, sizeof(got_data) );         // чиатем входящий сигнал
-      motor.update();
+  byte pipeNo;
+  while(radio.available(&pipeNo)){    // слушаем эфир со всех труб
+    radio.read( &got_data, sizeof(got_data) );         // чиатем входящий сигнал
+    motor.update();
 
-      power = got_data[0];
-      motor.setPower(power);
+    power = got_data[0];  // Данные о положение потенциометра
+    double_click = got_data[1]; // Была ли кнопка нажата два раза
 
-      if (got_data[1] == 1) {
-        motor.switchMainMode(true);
-      }
+    motor.setPower(power); // Настраиваем скорость
+
+    if (double_click) { // Если кнопка на пульте была нажата два раза
+      motor.switchMainMode(true); // Выбераем следущий режим
+    }      
+  }
   
-      
-   }
+  // Если данные от передатчика не приходят
+  motor.setPower(0); // Выключаем мотор
 }

@@ -13,6 +13,7 @@ Motor::Motor()
 void Motor::init(uint8_t motor_pin) {
     motor_pin_ = motor_pin;
     motor_.attach(motor_pin_);
+    
     motor_.writeMicroseconds(2300);
     delay(2000);
     motor_.writeMicroseconds(800);
@@ -22,8 +23,6 @@ void Motor::init(uint8_t motor_pin) {
 
 
 void Motor::update() {
-    Serial.println(motor_.readMicroseconds());
-
     switch (mode_) {
         case mComfort:{
             int val = map(power_, 0, 255, 800, 1200);
@@ -59,25 +58,32 @@ void Motor::setPower(uint8_t value) {
 
 
 void Motor::setMode(uint8_t index) {
-    if (index > mSport) {
-        mode_ = mSport;
+    if (power_ == 0) {
+        if (index > mSport) {
+            mode_ = mSport;
+        }
+        else if (index < mComfort) {
+            mode_ = mComfort;
+        }
+        mode_ = static_cast<Mode>(index);
     }
-    mode_ = static_cast<Mode>(index);
 }
 
 
 
 void Motor::switchMainMode(bool clockwice) { // Переключение режимов
-  int n = static_cast<int>(mode_);
+    if (power_ == 0) { // Если курок газа отпущен
+        int n = static_cast<int>(mode_);
 
-  n += clockwice ? 1 : -1; // Если по часовой стрелке, то ставим следующий
+        n += clockwice ? 1 : -1; // Если по часовой стрелке, то ставим следующий
 
-  if ( n > 2) {
-    n = 2;
-  }
-  if ( n < 0 ) {
-    n = 0;
-  }
+        if ( n > 2) {
+            n = 0;
+        }
+        if ( n < 0 ) {
+            n = 0;
+        }
 
-  mode_ = static_cast<Mode>(n);
+        mode_ = static_cast<Mode>(n);        
+    }
 }

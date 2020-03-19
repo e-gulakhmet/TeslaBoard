@@ -6,7 +6,7 @@
 
 /*
 Класс отвечающий за работу мотора.
-Здесь происходит управленте скорость и режимами работы мотора.
+Здесь происходит управление скоростью и режимами работы мотора.
 */
 
 
@@ -22,8 +22,8 @@ class Motor {
 
         void init(uint8_t motor_pin);
         void update();
-        void setPower(uint8_t value);
-        void setMode(uint8_t index);
+        void setPower(uint8_t value); // Установка мощности мотора(0 - 255)
+        void setMode(uint8_t index); // Выбор режима
         void switchMainMode(bool clockwice);
         String getModeName();
 
