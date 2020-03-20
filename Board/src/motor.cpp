@@ -13,11 +13,6 @@ Motor::Motor()
 void Motor::init(uint8_t motor_pin) {
     motor_pin_ = motor_pin;
     motor_.attach(motor_pin_);
-
-    motor_.writeMicroseconds(2300);
-    delay(2000);
-    motor_.writeMicroseconds(800);
-    delay(6000);
 }
 
 

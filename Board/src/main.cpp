@@ -11,14 +11,18 @@ Motor motor;
 const uint64_t pipes[2] = { 0xF0F0F0F0E1LL, 0xF0F0F0F0D2LL };
 
 byte got_data[4];
+byte send_data[4];
 uint8_t power;
 bool butt_double_click;
 bool butt_holded;
 bool is_on = true;
+bool is_setting;
 
 
 void setup(){
   Serial.begin(9600);
+
+  pinMode(A0, INPUT_PULLUP);
 
   motor.init(3);
   
@@ -35,35 +39,50 @@ void setup(){
   //при самой низкой скорости имеем самую высокую чувствительность и дальность!!
   radio.powerUp(); //начать работу
   radio.startListening();  //начинаем слушать эфир, мы приёмный модуль
+  //radio.writeAckPayload (1, send_data, sizeof(send_data) );
+
+  if (digitalRead(A0) == 0) {
+    is_setting = true;
+  }
 }
 
 
 
 void loop() {
   byte pipeNo;
-  while(radio.available(&pipeNo)){    // слушаем эфир со всех труб
-    radio.read( &got_data, sizeof(got_data) );         // чиатем входящий сигнал
-    motor.update();
+  while (radio.available(&pipeNo)) { // слушаем эфир со всех труб
+    radio.read(&got_data, sizeof(got_data)); // читаем входящий сигнал
+    
+    // radio.writeAckPayload(1, &send_data, sizeof(send_data));
 
     power = got_data[0];  // Данные о положение потенциометра
     butt_double_click = got_data[1]; // Была ли кнопка нажата два раза
     butt_holded = got_data[2]; // Информация об удержание кнопки
-    
-    if (butt_double_click) { // Если кнопка на пульте была нажата два раза
-      motor.switchMainMode(true); // Выбераем следущий режим
-    }
+    Serial.println(got_data[0]);
+      
+    motor.update();
 
-    if (butt_holded) { // Если кнопка была зажата в течении 1 секунды
-      is_on = !is_on; // Выключаем или включаем управление мотором
+    if (is_setting) {
+      motor.setMode(2);
+      motor.setPower(power);
     }
+    else {
+      if (butt_double_click) { // Если кнопка на пульте была нажата два раза
+        motor.switchMainMode(true); // Выбераем следущий режим
+      }
 
-    if (is_on) {
-      motor.setPower(power); // Настраиваем скорость
-    }
-    else{
-      motor.setMode(-1); // Выключаем мотор
+      if (butt_holded) { // Если кнопка была зажата в течении 1 секунды
+        is_on = !is_on; // Выключаем или включаем управление мотором
+      }
+
+      if (is_on) {
+        motor.setPower(power); // Настраиваем скорость
+      }
+      else{
+        motor.setMode(-1); // Выключаем мотор
+      }
     }
   }
-  
+
   // Если данные от передатчика не приходят
 }
