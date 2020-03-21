@@ -26,12 +26,12 @@ class Motor {
         void setPower(uint8_t value); // Установка мощности мотора(0 - 255)
         void setMode(Mode mode); // Выбор режима
         void switchMode(bool clockwice);
-        String getModeName();
+        uint8_t getModeName() {return mode_;}
+        uint8_t getPower() {return power_;}
 
     private:
         uint8_t motor_pin_;
         uint8_t power_;
-        String mode_name_[4] = {"Off", "Comfort", "Normal", "Sport"};
         
         uint16_t motor_spec_[4][3] = {
             // 0 - Максимальное изменение(0 - 255),
@@ -39,7 +39,7 @@ class Motor {
             // 2 - Максимальное значение частоты работы мотора(800 - 2300)
             {255, 0, 800},
             {10, 250, 1200},
-            {50, 100, 1800},
+            {50, 150, 1800},
             {254, 0, 2300}
         };
 
