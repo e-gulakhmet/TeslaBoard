@@ -1,86 +1,67 @@
 #include "motor.h"
 
 
-Motor::Motor()
-    : power_(0)
+Motor::Motor(uint8_t motor_pin)
+    : motor_pin_(motor_pin)
+    , power_(0)
+    , motor_delay_(0)
     , mode_(mComfort)
     {
-
     }
 
 
 
-void Motor::init(uint8_t motor_pin) {
-    motor_pin_ = motor_pin;
+void Motor::begin() {
     motor_.attach(motor_pin_);
+    motor_.writeMicroseconds(800);
 }
 
 
 
 void Motor::update() {
-    switch (mode_) {
-        case mOff:{
-            motor_.writeMicroseconds(800);
-        } break;
 
-        case mComfort:{
-            int val = map(power_, 0, 255, 800, 1200);
-            motor_.writeMicroseconds(val);
-        } break;
-        
-        case mNormal:{
-            int val = map(power_, 0, 255, 800, 1800);
-            motor_.writeMicroseconds(val);
-        } break;
-        
-        case mSport:{
-            int val = map(power_, 0, 255, 800, 2300);
-            motor_.writeMicroseconds(val);
-        } break;
-    }
 }
 
 
 
 void Motor::setPower(uint8_t value) {
-    if (value > 255) {
-        power_ = 255;
-    }
-    else if (value < 0) {
-        power_ = 0;
+    if (power_ == value)
+        return;
+    
+    if (int(value - power_) > int(motor_spec_[mode_][0])) {
+        if (millis() - motor_delay_ > motor_spec_[mode_][1]) {
+            motor_delay_ = millis();
+            power_ += motor_spec_[mode_][0];
+        }
     }
     else {
         power_ = value;
     }
+
+    Serial.print(mode_); Serial.print("    "); Serial.println(power_);
+    motor_.writeMicroseconds(map(power_, 0, 255, 800, motor_spec_[mode_][2]));
 }
 
 
 
-void Motor::setMode(uint8_t index) {
-    if (power_ == 0) {
-        if (index > mSport) {
-            mode_ = mSport;
-        }
-        else if (index < mComfort) {
-            mode_ = mComfort;
-        }
-        mode_ = static_cast<Mode>(index);
-    }
+void Motor::setMode(Mode mode) {
+    if (power_ == 0)
+        mode_ = mode;       
 }
 
 
 
-void Motor::switchMainMode(bool clockwice) { // Переключение режимов
+void Motor::switchMode(bool clockwise) { // Переключение режимов
     if (power_ == 0) { // Если курок газа отпущен
         int n = static_cast<int>(mode_);
 
-        n += clockwice ? 1 : -1; // Если по часовой стрелке, то ставим следующий
+        n += clockwise ? 1 : -1; // Если по часовой стрелке, то ставим следующий
 
         if ( n > 3) {
-            n = 0;
+            n = 1;
         }
-        if ( n < 0 ) {
-            n = 0;
+        if ( n < 1 ) {
+            n = 1;
         }
 
         mode_ = static_cast<Mode>(n);        

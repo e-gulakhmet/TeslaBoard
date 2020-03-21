@@ -6,7 +6,7 @@
 #include "motor.h"
 
 RF24 radio(9,10);
-Motor motor;
+Motor motor(3);
 
 const uint64_t pipes[2] = { 0xF0F0F0F0E1LL, 0xF0F0F0F0D2LL };
 
@@ -19,12 +19,13 @@ bool is_on = true;
 bool is_setting;
 
 
+// TODO: Добавить константы
+
+
 void setup(){
   Serial.begin(9600);
 
   pinMode(A0, INPUT_PULLUP);
-
-  motor.init(3);
   
   radio.begin(); //активировать модуль
   radio.setAutoAck(1);         //режим подтверждения приёма, 1 вкл 0 выкл
@@ -40,6 +41,8 @@ void setup(){
   radio.powerUp(); //начать работу
   radio.startListening();  //начинаем слушать эфир, мы приёмный модуль
   //radio.writeAckPayload (1, send_data, sizeof(send_data) );
+
+  motor.begin();
 
   if (digitalRead(A0) == 0) {
     is_setting = true;
@@ -58,29 +61,24 @@ void loop() {
     power = got_data[0];  // Данные о положение потенциометра
     butt_double_click = got_data[1]; // Была ли кнопка нажата два раза
     butt_holded = got_data[2]; // Информация об удержание кнопки
-    Serial.println(got_data[0]);
+
+    Serial.print(power); Serial.print("     ");
       
-    motor.update();
+    //motor.update();
 
     if (is_setting) {
-      motor.setMode(2);
-      motor.setPower(power);
+      motor.setMode(Motor::mOff);
+      // TODO: Сделать автоматическую настройку драйвера
     }
+
     else {
-      if (butt_double_click) { // Если кнопка на пульте была нажата два раза
-        motor.switchMainMode(true); // Выбераем следущий режим
-      }
+      if (butt_double_click) // Если кнопка на пульте была нажата два раза
+        motor.switchMode(true); // Выбераем следущий режим
 
-      if (butt_holded) { // Если кнопка была зажата в течении 1 секунды
-        is_on = !is_on; // Выключаем или включаем управление мотором
-      }
+      if (butt_holded) // Если кнопка была зажата в течении 1 секунды
+        motor.setMode(Motor::mOff); // Выключаем или включаем управление мотором
 
-      if (is_on) {
-        motor.setPower(power); // Настраиваем скорость
-      }
-      else{
-        motor.setMode(-1); // Выключаем мотор
-      }
+      motor.setPower(power);
     }
   }
 

@@ -5,25 +5,15 @@
 #include <GyverButton.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
+#include <Adafruit_ST7735.h>
 
 RF24 radio(9, 10);
 GButton button(2, HIGH_PULL);
-Adafruit_SSD1306 display = Adafruit_SSD1306(128, 64, &Wire);
+Adafruit_ST7735 tft = Adafruit_ST7735(5, 7, 8);
 
 const uint64_t pipes[2] = { 0xF0F0F0F0E1LL, 0xF0F0F0F0D2LL };
 
 byte send_data[4];
-unsigned long disp_timer;
-
-
-void showDisp() {
-  display.setTextSize(3);
-  display.setTextColor(WHITE);
-  display.setCursor(0,0);
-  display.print("Hello");
-  display.display();
-}
 
 
 
@@ -48,20 +38,20 @@ void setup() {
 
   radio.powerUp(); //начать работу
   radio.stopListening();  //не слушаем радиоэфир, мы передатчик
+
+  tft.initR(INITR_BLACKTAB);      // Init ST7735S chip, black tab
+  tft.fillScreen(ST7735_BLACK);
+  tft.setRotation(0);
 }
 
 void loop() {
   button.tick();
 
   send_data[0] = map(analogRead(A1), 0, 1023, 0, 255); // Данные о положении потенциометра
-  Serial.println(send_data[0]);
   send_data[1] = button.isDouble(); // Двойное нажатие кнопки
   send_data[2] = button.isHolded(); // Если кнопка была нажата более 1 секунды
 
   radio.write(&send_data, 4);
 
-  if (millis() - disp_timer > 1000){
-    disp_timer = millis();
-  }
 
 }
