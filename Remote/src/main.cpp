@@ -4,10 +4,12 @@
 #include <RF24.h>
 #include <GyverButton.h>
 #include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 
 #include "main.h"
 
-
+Adafruit_SSD1306 display = Adafruit_SSD1306(128, 64, &Wire);
 RF24 radio(RADIO_CS_PIN, RADIO_DO_PIN);
 GButton button(BUTT_PIN, HIGH_PULL);
 
@@ -16,6 +18,17 @@ byte got_data[4];
 uint8_t power;
 uint8_t mode;
 String mode_name_[4] = {"Off", "Comfort", "Normal", "Sport"};
+
+
+
+void showDisp() {
+  display.setTextSize(3);
+  display.setTextColor(WHITE);
+  display.setCursor(0,0);
+  display.print(power);
+  display.display();
+}
+
 
 
 void setup() {
@@ -39,6 +52,15 @@ void setup() {
 
   radio.powerUp(); //начать работу
   radio.stopListening();  //не слушаем радиоэфир, мы передатчик
+
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  Serial.println("Display is active");
+  display.clearDisplay();
+  display.setTextSize(3);
+  display.setTextColor(WHITE);
+  display.setCursor(0,0);
+  display.print("HELLO");
+  display.display();
 }
 
 void loop() {
