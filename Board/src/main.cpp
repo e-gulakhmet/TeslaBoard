@@ -61,7 +61,6 @@ void loop() {
     butt_double_click = got_data[1]; // Была ли кнопка нажата два раза
     butt_holded = got_data[2]; // Информация об удержание кнопки
 
-
     send_data[0] = motor.getPower();
     send_data[1] = motor.getModeName();
 
