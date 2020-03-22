@@ -18,7 +18,8 @@ bool is_on = true;
 bool is_setting;
 
 
-// TODO: Добавить константы
+// TODO: Отправлять данные только если они изменились
+
 
 
 void setup(){
@@ -34,12 +35,12 @@ void setup(){
   radio.openReadingPipe(1, 0xF0F0F0F0E1LL);      //хотим слушать трубу 0
   radio.setChannel(0x60);  //выбираем канал (в котором нет шумов!)
   radio.setPALevel (RF24_PA_MAX); //уровень мощности передатчика. На выбор RF24_PA_MIN, RF24_PA_LOW, RF24_PA_HIGH, RF24_PA_MAX
-  radio.setDataRate (RF24_250KBPS); //скорость обмена. На выбор RF24_2MBPS, RF24_1MBPS, RF24_250KBPS
+  radio.setDataRate (RF24_1MBPS); //скорость обмена. На выбор RF24_2MBPS, RF24_1MBPS, RF24_250KBPS
   //должна быть одинакова на приёмнике и передатчике!
   //при самой низкой скорости имеем самую высокую чувствительность и дальность!!
   radio.powerUp(); //начать работу
   radio.startListening();  //начинаем слушать эфир, мы приёмный модуль
-  radio.writeAckPayload (1, send_data, sizeof(send_data) );
+  radio.writeAckPayload(1, &send_data, sizeof(send_data));
 
   motor.begin();
 
@@ -54,19 +55,19 @@ void loop() {
   byte pipeNo;
   while (radio.available(&pipeNo)) { // слушаем эфир со всех труб
     radio.read(&got_data, sizeof(got_data)); // читаем входящий сигнал
-    
+    radio.writeAckPayload(1, &send_data, sizeof(send_data));
+   
     power = got_data[0];  // Данные о положение потенциометра
     butt_double_click = got_data[1]; // Была ли кнопка нажата два раза
     butt_holded = got_data[2]; // Информация об удержание кнопки
 
+
     send_data[0] = motor.getPower();
     send_data[1] = motor.getModeName();
-    radio.writeAckPayload(1, &send_data, sizeof(send_data));
 
 
     if (is_setting) {
       motor.setMode(Motor::mOff);
-      // TODO: Сделать автоматическую настройку драйвера
     }
 
     else {

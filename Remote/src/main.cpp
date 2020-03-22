@@ -7,14 +7,14 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-#include "main.h"
+#include "remote.h"
 
 Adafruit_SSD1306 display = Adafruit_SSD1306(128, 64, &Wire);
 RF24 radio(RADIO_CS_PIN, RADIO_DO_PIN);
 GButton button(BUTT_PIN, HIGH_PULL);
 
-byte send_data[4];
-byte got_data[4];
+byte send_data[3];
+byte got_data[3];
 uint8_t power;
 uint8_t mode;
 String mode_name_[4] = {"Off", "Comfort", "Normal", "Sport"};
@@ -22,8 +22,14 @@ String mode_name_[4] = {"Off", "Comfort", "Normal", "Sport"};
 
 
 void showDisp() {
+  static unsigned long disp_timer;
+
+  if (millis() - disp_timer < 1000)
+    return;
+  
+  disp_timer = millis();
   display.setTextSize(3);
-  display.setTextColor(WHITE);
+  display.setTextColor(WHITE, BLACK);
   display.setCursor(0,0);
   display.print(power);
   display.display();
@@ -46,7 +52,7 @@ void setup() {
   radio.setChannel(0x60);  //выбираем канал (в котором нет шумов!)
 
   radio.setPALevel (RF24_PA_MAX); //уровень мощности передатчика. На выбор RF24_PA_MIN, RF24_PA_LOW, RF24_PA_HIGH, RF24_PA_MAX
-  radio.setDataRate (RF24_250KBPS); //скорость обмена. На выбор RF24_2MBPS, RF24_1MBPS, RF24_250KBPS
+  radio.setDataRate (RF24_1MBPS); //скорость обмена. На выбор RF24_2MBPS, RF24_1MBPS, RF24_250KBPS
   //должна быть одинакова на приёмнике и передатчике!
   //при самой низкой скорости имеем самую высокую чувствительность и дальность!!
 
@@ -54,14 +60,14 @@ void setup() {
   radio.stopListening();  //не слушаем радиоэфир, мы передатчик
 
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
-  Serial.println("Display is active");
   display.clearDisplay();
   display.setTextSize(3);
   display.setTextColor(WHITE);
   display.setCursor(0,0);
-  display.print("HELLO");
+  display.print("WhoMan");
   display.display();
 }
+
 
 void loop() {
   button.tick();
@@ -70,14 +76,18 @@ void loop() {
   send_data[1] = button.isDouble(); // Двойное нажатие кнопки
   send_data[2] = button.isHolded(); // Если кнопка была нажата более 1 секунды
 
-  radio.write(&send_data, 4);
+  radio.write(&send_data, 3);
 
-  if (radio.isAckPayloadAvailable()) { // Если в буфере имеются принятые данные из пакета подтверждения приёма, то ...
+  if (radio.isAckPayloadAvailable()) { // Если в буфере имеются принятые данные из пакета подтверждения приёма, то
     radio.read(&got_data, sizeof(got_data)); // Читаем данные из буфера в массив got_data указывая сколько всего байт может поместиться в массив.
-
+    Serial.println("got");
     power = got_data[0];
-    mode = got_data[1];
+    mode = got_data[1]; 
+    showDisp();
   }
+
+
+
 
 
 }
