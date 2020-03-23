@@ -20,18 +20,21 @@ uint8_t mode;
 String mode_name_[4] = {"Off", "Comfort", "Normal", "Sport"};
 
 
+// TODO: Отправлять режим а не нажатие кнопки
+
+
 
 void showDisp() {
   static unsigned long disp_timer;
-
-  if (millis() - disp_timer < 1000)
+  // Обновляем экран только раз в секунду.
+  if (millis() - disp_timer < 2000)
     return;
   
   disp_timer = millis();
-  display.setTextSize(3);
+  display.setTextSize(1);
   display.setTextColor(WHITE, BLACK);
   display.setCursor(0,0);
-  display.print(power);
+  display.print("TESLA BOARD");
   display.display();
 }
 
@@ -62,9 +65,15 @@ void setup() {
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   display.clearDisplay();
   display.setTextSize(3);
-  display.setTextColor(WHITE);
-  display.setCursor(0,0);
-  display.print("WhoMan");
+  display.setTextColor(WHITE, BLACK);
+  display.setCursor(20,0);
+  display.print("Tesla");
+  display.setCursor(20, 30);
+  display.print("Board");
+  display.display();
+  delay(2000);
+  display.setRotation(1);
+  display.clearDisplay();
   display.display();
 }
 
@@ -73,7 +82,7 @@ void loop() {
   button.tick();
 
   send_data[0] = map(analogRead(A1), 0, 1023, 0, 255); // Данные о положении потенциометра
-  send_data[1] = button.isDouble(); // Двойное нажатие кнопки
+  send_data[1] = button.isClick(); // Двойное нажатие кнопки
   send_data[2] = button.isHolded(); // Если кнопка была нажата более 1 секунды
 
   radio.write(&send_data, 3);
@@ -85,6 +94,8 @@ void loop() {
     mode = got_data[1]; 
     showDisp();
   }
+
+
 
 
 

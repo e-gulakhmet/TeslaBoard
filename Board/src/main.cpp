@@ -16,9 +16,9 @@ bool butt_double_click;
 bool butt_holded;
 bool is_on = true;
 bool is_setting;
+bool is_send;
 
 
-// TODO: Отправлять данные только если они изменились
 
 
 
@@ -53,21 +53,29 @@ void setup(){
 
 void loop() {
   byte pipeNo;
-  while (radio.available(&pipeNo)) { // слушаем эфир со всех труб
+  if (radio.available(&pipeNo)) { // слушаем эфир со всех труб
     radio.read(&got_data, sizeof(got_data)); // читаем входящий сигнал
-    radio.writeAckPayload(1, &send_data, sizeof(send_data));
+    if (is_send) {
+      radio.writeAckPayload(1, &send_data, sizeof(send_data));
+      is_send = false;
+    }
+
    
     power = got_data[0];  // Данные о положение потенциометра
     butt_double_click = got_data[1]; // Была ли кнопка нажата два раза
     butt_holded = got_data[2]; // Информация об удержание кнопки
 
-    send_data[0] = motor.getPower();
-    send_data[1] = motor.getModeName();
-
-
-    if (is_setting) {
-      motor.setMode(Motor::mOff);
+    if (send_data[0] != motor.getPower()) {
+      send_data[0] = motor.getPower();
+      is_send = true;
     }
+    if (send_data[1] != motor.getModeName()) {
+      send_data[1] = motor.getModeName();
+      is_send = true;
+    }
+
+    if (is_setting)
+      motor.setMode(Motor::mOff);
 
     else {
       if (butt_double_click) // Если кнопка на пульте была нажата два раза
@@ -77,8 +85,12 @@ void loop() {
         motor.setMode(Motor::mOff); // Выключаем или включаем управление мотором
 
       motor.setPower(power);
+
     }
   }
+  motor.update();
+
+
 
   // Если данные от передатчика не приходят
 }
