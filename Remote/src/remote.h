@@ -8,5 +8,12 @@ const uint8_t RADIO_DO_PIN = 10;
 const uint8_t BUTT_PIN = 2;
 const uint8_t POTENT_PIN = A1;
 
+typedef enum {
+    mmOff,
+    mmComfort,
+    mmNormal,
+    mmSport
+} MotorMode;
+
 
 #endif // _MAIN_H_

@@ -20,8 +20,6 @@ bool is_send;
 
 
 
-
-
 void setup(){
   Serial.begin(9600);
 
@@ -55,38 +53,28 @@ void loop() {
   byte pipeNo;
   if (radio.available(&pipeNo)) { // слушаем эфир со всех труб
     radio.read(&got_data, sizeof(got_data)); // читаем входящий сигнал
-    if (is_send) {
+    if (is_send) { // Если данные изменились, то отправляем их
       radio.writeAckPayload(1, &send_data, sizeof(send_data));
       is_send = false;
     }
 
-   
-    power = got_data[0];  // Данные о положение потенциометра
-    butt_double_click = got_data[1]; // Была ли кнопка нажата два раза
-    butt_holded = got_data[2]; // Информация об удержание кнопки
-
-    if (send_data[0] != motor.getPower()) {
-      send_data[0] = motor.getPower();
-      is_send = true;
-    }
-    if (send_data[1] != motor.getModeName()) {
-      send_data[1] = motor.getModeName();
-      is_send = true;
-    }
-
-    if (is_setting)
-      motor.setMode(Motor::mOff);
+    if (is_setting) // В режиме настроек включаем спорт режим
+      motor.setMode(Motor::mSport); // Чтобы была максимальная чувствительность
 
     else {
-      if (butt_double_click) // Если кнопка на пульте была нажата два раза
-        motor.switchMode(true); // Выбераем следущий режим
-
-      if (butt_holded) // Если кнопка была зажата в течении 1 секунды
-        motor.setMode(Motor::mOff); // Выключаем или включаем управление мотором
-
-      motor.setPower(power);
-
+      motor.setPower(got_data[0]);  // Данные о положение потенциометра
+      motor.setMode(got_data[1]); // Данные о выбранном режиме
     }
+
+    // Проверяем изменились ли данные
+    // if (send_data[0] != motor.getPower()) {
+    //   send_data[0] = motor.getPower();
+    //   is_send = true;
+    // }
+    // if (send_data[1] != motor.getModeName()) {
+    //   send_data[1] = motor.getModeName();
+    //   is_send = true;
+    // }
   }
   motor.update();
 

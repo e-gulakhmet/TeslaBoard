@@ -13,10 +13,11 @@ Adafruit_SSD1306 display = Adafruit_SSD1306(128, 64, &Wire);
 RF24 radio(RADIO_CS_PIN, RADIO_DO_PIN);
 GButton button(BUTT_PIN, HIGH_PULL);
 
+MotorMode motor_mode = mmComfort;
+
 byte send_data[3];
 byte got_data[3];
 uint8_t power;
-uint8_t mode;
 String mode_name_[4] = {"Off", "Comfort", "Normal", "Sport"};
 
 
@@ -24,18 +25,52 @@ String mode_name_[4] = {"Off", "Comfort", "Normal", "Sport"};
 
 
 
+MotorMode switchMotorMode(MotorMode mode, bool clockwise) { // Переключение режимов
+  int n = static_cast<int>(mode);
+
+  n += clockwise ? 1 : -1; // Если по часовой стрелке, то ставим следующий
+
+  if ( n > 3) {
+      n = 1;
+  }
+  if ( n < 1 ) {
+      n = 1;
+  }
+
+  return static_cast<MotorMode>(n);
+}
+
+
+
 void showDisp() {
   static unsigned long disp_timer;
-  // Обновляем экран только раз в секунду.
+  static uint8_t old_power;
+  // Обновляем экран два раза в секунду.
   if (millis() - disp_timer < 2000)
     return;
   
   disp_timer = millis();
   display.setTextSize(1);
   display.setTextColor(WHITE, BLACK);
-  display.setCursor(0,0);
-  display.print("TESLA BOARD");
+  display.setCursor(0, 0);
+  // Отображаем информацию о мощности двигателя
+  for (uint8_t y = 120; y > map(power, 0, 254, 122, 0); y -= 8) {
+    if (power >= old_power) {
+      display.fillRect(0, y, 15, 7, WHITE);
+      old_power = power;
+    }
+    else {
+      display.fillRect(0, 0, 15, y, BLACK);
+      old_power = power;
+    }
+    
+
+  }
   display.display();
+
+  
+
+
 }
 
 
@@ -81,19 +116,29 @@ void setup() {
 void loop() {
   button.tick();
 
-  send_data[0] = map(analogRead(A1), 0, 1023, 0, 255); // Данные о положении потенциометра
-  send_data[1] = button.isClick(); // Двойное нажатие кнопки
-  send_data[2] = button.isHolded(); // Если кнопка была нажата более 1 секунды
+  power = map(analogRead(A1), 0, 1023, 0, 255); // Данные о положении потенциометра
 
+  if (button.isDouble()) { // Если кнопка была нажата два раза
+    motor_mode = switchMotorMode(motor_mode, true); // Выбираем следущий режим
+  }
+  if (button.isHolded()) { // Если было долгое нажатие на кнопку
+    motor_mode = mmOff; // Включаем режим настроек
+  }
+  
+  // Подготавливаем данные для отправки
+  send_data[0] = power; // Данные о положении потенциометра
+  send_data[1] = motor_mode; // Двойное нажатие кнопки
+  // Отправеляем данные
   radio.write(&send_data, 3);
 
+  // Получаем данные от приемника
   if (radio.isAckPayloadAvailable()) { // Если в буфере имеются принятые данные из пакета подтверждения приёма, то
     radio.read(&got_data, sizeof(got_data)); // Читаем данные из буфера в массив got_data указывая сколько всего байт может поместиться в массив.
     Serial.println("got");
-    power = got_data[0];
-    mode = got_data[1]; 
-    showDisp();
   }
+
+  // Выводим информацию на димплей
+  showDisp();
 
 
 

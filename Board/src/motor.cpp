@@ -59,9 +59,9 @@ void Motor::setPower(uint8_t value) {
 
 
 
-void Motor::setMode(Mode mode) {
+void Motor::setMode(uint8_t mode) {
     if (power_ <= 10)
-        mode_ = mode;       
+        mode_ = static_cast<Mode>(mode);
 }
 
 

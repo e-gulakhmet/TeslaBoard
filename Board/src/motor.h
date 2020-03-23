@@ -24,7 +24,7 @@ class Motor {
         void begin();
         void update();
         void setPower(uint8_t value); // Установка мощности мотора(0 - 255)
-        void setMode(Mode mode); // Выбор режима
+        void setMode(uint8_t mode); // Выбор режима
         void switchMode(bool clockwice);
         uint8_t getModeName() {return mode_;}
         uint8_t getPower() {return power_;}
