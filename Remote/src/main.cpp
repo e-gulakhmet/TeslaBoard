@@ -8,6 +8,7 @@
 #include <Adafruit_SSD1306.h>
 
 #include "remote.h"
+#include "object.h"
 
 Adafruit_SSD1306 display = Adafruit_SSD1306(128, 64, &Wire);
 RF24 radio(RADIO_CS_PIN, RADIO_DO_PIN);
@@ -18,10 +19,7 @@ MotorMode motor_mode = mmComfort;
 byte send_data[3];
 byte got_data[3];
 uint8_t power;
-String mode_name_[4] = {"Off", "Comfort", "Normal", "Sport"};
-
-
-// TODO: Отправлять режим а не нажатие кнопки
+String mode_name[4] = {"Off", "Eco", "Norm", "Sport"};
 
 
 
@@ -44,33 +42,22 @@ MotorMode switchMotorMode(MotorMode mode, bool clockwise) { // Переключ�
 
 void showDisp() {
   static unsigned long disp_timer;
-  static uint8_t old_power;
   // Обновляем экран два раза в секунду.
   if (millis() - disp_timer < 2000)
     return;
   
   disp_timer = millis();
-  display.setTextSize(1);
   display.setTextColor(WHITE, BLACK);
-  display.setCursor(0, 0);
-  // Отображаем информацию о мощности двигателя
-  for (uint8_t y = 120; y > map(power, 0, 254, 122, 0); y -= 8) {
-    if (power >= old_power) {
-      display.fillRect(0, y, 15, 7, WHITE);
-      old_power = power;
-    }
-    else {
-      display.fillRect(0, 0, 15, y, BLACK);
-      old_power = power;
-    }
-    
 
-  }
+  // Отображаем информацию о двигателе
+  display.setTextSize(2);
+  display.setCursor(0, 16);
+  display.print("POWER: "); display.print(power);
+  display.setCursor(0, 40);
+  display.print("MODE: "); display.print(mode_name[motor_mode]);
+
+
   display.display();
-
-  
-
-
 }
 
 
@@ -107,7 +94,6 @@ void setup() {
   display.print("Board");
   display.display();
   delay(2000);
-  display.setRotation(1);
   display.clearDisplay();
   display.display();
 }
