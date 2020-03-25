@@ -20,6 +20,11 @@ byte send_data[3];
 byte got_data[3];
 uint8_t power;
 String mode_name[4] = {"Off", "Eco", "Norm", "Sport"};
+uint8_t battery_proc;
+uint8_t motor_temp = 10;
+int disp_update_period[4] = {10000, 2000, 3000, 5000};
+unsigned long connect_timer;
+bool is_connect;
 
 
 
@@ -43,19 +48,45 @@ MotorMode switchMotorMode(MotorMode mode, bool clockwise) { // Переключ�
 void showDisp() {
   static unsigned long disp_timer;
   // Обновляем экран два раза в секунду.
-  if (millis() - disp_timer < 2000)
+  if (millis() - disp_timer < disp_update_period[motor_mode])
     return;
   
   disp_timer = millis();
   display.setTextColor(WHITE, BLACK);
 
   // Отображаем информацию о двигателе
+  display.drawRect(0, 16, 128, 44, WHITE);
   display.setTextSize(2);
-  display.setCursor(0, 16);
-  display.print("POWER: "); display.print(power);
-  display.setCursor(0, 40);
-  display.print("MODE: "); display.print(mode_name[motor_mode]);
+  display.setCursor(5, 20);
+  display.print("POWER: ");
+  if (power < 100 && power >= 10) {
+    display.print(power);
+    display.print(" ");
+  }
+  else if (power < 10) {
+    display.print(power);
+    display.print("  ");
+  }
+  else {
+    display.print(power);
+  }
+  display.setCursor(5, 40);
+  display.print("MODE:");
+  display.setCursor(65, 40);
+  display.print(mode_name[motor_mode]);
 
+  // Отображаем доп данные
+  display.setTextSize(1);
+  display.setCursor(0, 0);
+  display.print("BATT: "); 
+  display.setCursor(30, 0);
+  display.print(battery_proc); display.print("%");
+  display.setCursor(55, 0);
+  display.print("MOT_TEMP:");
+  display.setCursor(110, 0);
+  display.print(motor_temp);
+  display.drawCircle(123, 1, 1, WHITE);
+  display.fillRect(20, 62, 80, 2, is_connect);
 
   display.display();
 }
@@ -110,6 +141,10 @@ void loop() {
   if (button.isHolded()) { // Если было долгое нажатие на кнопку
     motor_mode = mmOff; // Включаем режим настроек
   }
+
+  if (millis() - connect_timer > 5000 && is_connect) {
+    is_connect = false;
+  }
   
   // Подготавливаем данные для отправки
   send_data[0] = power; // Данные о положении потенциометра
@@ -121,6 +156,10 @@ void loop() {
   if (radio.isAckPayloadAvailable()) { // Если в буфере имеются принятые данные из пакета подтверждения приёма, то
     radio.read(&got_data, sizeof(got_data)); // Читаем данные из буфера в массив got_data указывая сколько всего байт может поместиться в массив.
     Serial.println("got");
+    connect_timer = millis();
+    is_connect = true;
+    battery_proc = got_data[0];
+    motor_temp = got_data[1];
   }
 
   // Выводим информацию на димплей

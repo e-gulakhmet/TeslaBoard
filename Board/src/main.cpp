@@ -16,7 +16,10 @@ bool butt_double_click;
 bool butt_holded;
 bool is_on = true;
 bool is_setting;
-bool is_send;
+bool is_send = true;
+unsigned long send_timer;
+unsigned long radio_timer;
+bool is_connect;
 
 
 
@@ -53,10 +56,12 @@ void loop() {
   byte pipeNo;
   if (radio.available(&pipeNo)) { // слушаем эфир со всех труб
     radio.read(&got_data, sizeof(got_data)); // читаем входящий сигнал
-    if (is_send) { // Если данные изменились, то отправляем их
+    if (millis() - send_timer > 2000) {
       radio.writeAckPayload(1, &send_data, sizeof(send_data));
-      is_send = false;
+      send_timer = millis();
     }
+
+    radio_timer = millis();
 
     if (is_setting) // В режиме настроек включаем спорт режим
       motor.setMode(Motor::mSport); // Чтобы была максимальная чувствительность
@@ -66,16 +71,18 @@ void loop() {
       motor.setMode(got_data[1]); // Данные о выбранном режиме
     }
 
-    // Проверяем изменились ли данные
-    // if (send_data[0] != motor.getPower()) {
-    //   send_data[0] = motor.getPower();
-    //   is_send = true;
-    // }
-    // if (send_data[1] != motor.getModeName()) {
-    //   send_data[1] = motor.getModeName();
-    //   is_send = true;
-    // }
+  send_data[0] = 20; // Отправляем данные о заряде
+  send_data[1] = 30; // Отправляем данные о температуре
+
   }
+
+  if (millis() - radio_timer > 4000) { // Если данные от пульта не поступали больше 5 сикунд
+    // Выключаем мотор
+    motor.setMode(Motor::mOff);
+    motor.setPower(0);
+    radio_timer = millis();
+  }
+
   motor.update();
 
 
