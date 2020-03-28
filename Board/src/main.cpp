@@ -53,39 +53,42 @@ void setup(){
 
 
 void loop() {
-  byte pipeNo;
-  if (radio.available(&pipeNo)) { // слушаем эфир со всех труб
-    radio.read(&got_data, sizeof(got_data)); // читаем входящий сигнал
-    if (millis() - send_timer > 2000) {
-      radio.writeAckPayload(1, &send_data, sizeof(send_data));
-      send_timer = millis();
-    }
 
-    radio_timer = millis();
 
-    if (is_setting) // В режиме настроек включаем спорт режим
-      motor.setMode(Motor::mSport); // Чтобы была максимальная чувствительность
+  if (!is_setting) {
+    byte pipeNo;
+    if (radio.available(&pipeNo)) { // слушаем эфир со всех труб
+      radio.read(&got_data, sizeof(got_data)); // читаем входящий сигнал
+      if (millis() - send_timer > 2000) { // Отправляем данные обратно каждые 2 секунды
+        radio.writeAckPayload(1, &send_data, sizeof(send_data));
+        send_timer = millis();
+      }
 
-    else {
+      radio_timer = millis(); // Сбрасываем таймер подключения
+
       motor.setPower(got_data[0]);  // Данные о положение потенциометра
       motor.setMode(got_data[1]); // Данные о выбранном режиме
+
+      send_data[0] = 20; // Отправляем данные о заряде
+      send_data[1] = 30; // Отправляем данные о температуре
+
     }
 
-  send_data[0] = 20; // Отправляем данные о заряде
-  send_data[1] = 30; // Отправляем данные о температуре
-
+    if (millis() - radio_timer > 3000) { // Если данные от пульта не поступали больше 3 сикунд
+      // Выключаем мотор
+      motor.setMode(Motor::mOff);
+      motor.setPower(0);
+      radio_timer = millis();
+    }
+  }
+  else { // В режиме настроек включаем спорт режим
+    motor.setMode(Motor::mSport); // Максимальная чувствительность
+    if (digitalRead(BUTT_PIN) == 0)
+      motor.setPower(255);
+    else
+      motor.setPower(0);
   }
 
-  if (millis() - radio_timer > 4000) { // Если данные от пульта не поступали больше 5 сикунд
-    // Выключаем мотор
-    motor.setMode(Motor::mOff);
-    motor.setPower(0);
-    radio_timer = millis();
-  }
 
   motor.update();
-
-
-
-  // Если данные от передатчика не приходят
 }

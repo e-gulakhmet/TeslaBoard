@@ -86,6 +86,9 @@ void showDisp() {
   display.setCursor(110, 0);
   display.print(motor_temp);
   display.drawCircle(123, 1, 1, WHITE);
+
+
+  // Отображаем инкатор подключения
   display.fillRect(20, 62, 80, 2, is_connect);
 
   display.display();
@@ -142,7 +145,7 @@ void loop() {
     motor_mode = mmOff; // Включаем режим настроек
   }
 
-  if (millis() - connect_timer > 5000 && is_connect) {
+  if (millis() - connect_timer > 4000 && is_connect) {
     is_connect = false;
   }
   
