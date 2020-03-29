@@ -23,7 +23,7 @@ bool is_display = true;
 uint8_t power;
 String mode_name[4] = {"Off", "Eco", "Normal", "Sport"};
 uint8_t board_battery;
-uint8_t board_temp = 10;
+uint8_t board_temp;
 unsigned long connect_timer;
 unsigned long battery_timer;
 unsigned long display_timer;
@@ -153,6 +153,7 @@ void loop() {
   // Подготавливаем данные для отправки
   send_data[0] = power; // Данные о положении потенциометра
   send_data[1] = motor_mode; // Двойное нажатие кнопки
+  send_data[2] = is_lights;
   // Отправеляем данные
   radio.write(&send_data, 3);
   
@@ -168,13 +169,10 @@ void loop() {
 
   power = map(analogRead(A1), 0, 1023, 0, 255); // Данные о положении потенциометра
 
-  if (button.isPress()) {
-    display_timer = millis();
-    is_display = true;
-  }
-
   if (button.isClick()) { // Если кнопка была нажата два раза
     motor_mode = switchMotorMode(motor_mode, true); // Выбираем следущий режим
+    display_timer = millis();
+    is_display = true;
   }
   if (button.isHold()) { // Если было долгое нажатие на кнопку
     motor_mode = mmOff; // Включаем режим настроек

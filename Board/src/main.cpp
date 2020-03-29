@@ -2,35 +2,39 @@
 #include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
+#include <FastLED.h>
 
 #include "motor.h"
 #include "main.h"
+#include "light.h"
+
+#define NUM_LEDS 32
+#define DATA_PIN 5
 
 RF24 radio(RADIO_CS_PIN, RADIO_DO_PIN);
 Motor motor(MOTOR_PIN);
+Light light(DATA_PIN);
 
-byte got_data[4];
-byte send_data[4];
-uint8_t power;
-bool butt_double_click;
-bool butt_holded;
-bool is_on = true;
+LightsMode lights_mode;
+
+byte got_data[3];
+byte send_data[3];
+bool is_light = true;
 bool is_setting;
-bool is_send = true;
 unsigned long send_timer;
 unsigned long radio_timer;
-bool is_connect;
+uint8_t counter;
 
 
-// TODO: Добавить подсветку
 // TODO: Дабавить датчик температуры
 
 
-
-void setup(){
+void setup() {
   Serial.begin(9600);
 
   pinMode(BUTT_PIN, INPUT_PULLUP);
+
+  light.begin();
   
   radio.begin(); //активировать модуль
   radio.setAutoAck(1);         //режим подтверждения приёма, 1 вкл 0 выкл
@@ -57,8 +61,6 @@ void setup(){
 
 
 void loop() {
-
-
   if (!is_setting) {
     byte pipeNo;
     if (radio.available(&pipeNo)) { // слушаем эфир со всех труб
@@ -75,7 +77,6 @@ void loop() {
 
       send_data[0] = 20; // Отправляем данные о заряде
       send_data[1] = 30; // Отправляем данные о температуре
-
     }
 
     if (millis() - radio_timer > 3000) { // Если данные от пульта не поступали больше 3 сикунд
@@ -84,7 +85,12 @@ void loop() {
       motor.setPower(0);
       radio_timer = millis();
     }
+
+    light.oneColor();
+
   }
+
+  // Режим настроек
   else { // В режиме настроек включаем спорт режим
     motor.setMode(Motor::mSport); // Максимальная чувствительность
     if (digitalRead(BUTT_PIN) == 0)
