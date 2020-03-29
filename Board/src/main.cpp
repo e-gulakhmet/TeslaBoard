@@ -22,6 +22,10 @@ unsigned long radio_timer;
 bool is_connect;
 
 
+// TODO: Добавить подсветку
+// TODO: Дабавить датчик температуры
+
+
 
 void setup(){
   Serial.begin(9600);

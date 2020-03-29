@@ -7,24 +7,28 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-#include "remote.h"
-#include "object.h"
+#include "main.h"
+#include "power.h"
 
 Adafruit_SSD1306 display = Adafruit_SSD1306(128, 64, &Wire);
 RF24 radio(RADIO_CS_PIN, RADIO_DO_PIN);
 GButton button(BUTT_PIN, HIGH_PULL);
+Power battery(POWER_PIN, BATTERY_PIN);
 
 MotorMode motor_mode = mmComfort;
 
 byte send_data[3];
 byte got_data[3];
+bool is_display = true;
 uint8_t power;
-String mode_name[4] = {"Off", "Eco", "Norm", "Sport"};
-uint8_t battery_proc;
-uint8_t motor_temp = 10;
-int disp_update_period[4] = {10000, 2000, 3000, 5000};
+String mode_name[4] = {"Off", "Eco", "Normal", "Sport"};
+uint8_t board_battery;
+uint8_t board_temp = 10;
 unsigned long connect_timer;
+unsigned long battery_timer;
+unsigned long display_timer;
 bool is_connect;
+bool is_lights;
 
 
 
@@ -47,50 +51,50 @@ MotorMode switchMotorMode(MotorMode mode, bool clockwise) { // Переключ�
 
 void showDisp() {
   static unsigned long disp_timer;
-  // Обновляем экран два раза в секунду.
-  if (millis() - disp_timer < disp_update_period[motor_mode])
+
+  if (millis() - disp_timer < 2000)
     return;
-  
+
   disp_timer = millis();
+  // Обновляем экран два раза в секунду.
+  display.clearDisplay();
   display.setTextColor(WHITE, BLACK);
-
-  // Отображаем информацию о двигателе
-  display.drawRect(0, 16, 128, 44, WHITE);
-  display.setTextSize(2);
-  display.setCursor(5, 20);
-  display.print("POWER: ");
-  if (power < 100 && power >= 10) {
-    display.print(power);
-    display.print(" ");
-  }
-  else if (power < 10) {
-    display.print(power);
-    display.print("  ");
-  }
-  else {
-    display.print(power);
-  }
-  display.setCursor(5, 40);
-  display.print("MODE:");
-  display.setCursor(65, 40);
-  display.print(mode_name[motor_mode]);
-
-  // Отображаем доп данные
   display.setTextSize(1);
-  display.setCursor(0, 0);
-  display.print("BATT: "); 
-  display.setCursor(30, 0);
-  display.print(battery_proc); display.print("%");
-  display.setCursor(55, 0);
-  display.print("MOT_TEMP:");
-  display.setCursor(110, 0);
-  display.print(motor_temp);
-  display.drawCircle(123, 1, 1, WHITE);
 
+  // Отображаем информацию о пульте
+  // Рисуем батарею
+  display.drawRect(0, 0, 20, 10, HIGH); display.fillRect(20, 2, 2, 6, HIGH);
+  // Значения на батареи
+  display.fillRect(1, 1, map(battery.getProcent(), 0, 100, 0, 18), 8, HIGH);
+  // Вольтаж батареи
+  display.setCursor(26, 0);
+  display.print(battery.getVoltage()); display.setCursor(50, 0); display.print("V");
+  // Данные о подключении к доске
+  if (is_connect)
+    display.fillCircle(120, 5, 5, HIGH);
+  else
+    display.drawCircle(120, 5, 5, HIGH);
 
-  // Отображаем инкатор подключения
-  display.fillRect(20, 62, 80, 2, is_connect);
-
+  // Отображаем данные о доске
+  display.drawRect(0, 16, 128, 48, HIGH);
+  display.setCursor(20, 18);
+  display.print("BOARD");
+  // Данные о положении курка газа
+  display.setCursor(2, 30);
+  display.print("POWER:"); display.setCursor(40, 30); display.print(power);
+  // Данные о режиме работы доски
+  display.setCursor(2, 42);
+  display.print("MODE:"); display.setCursor(36, 42); display.print(mode_name[motor_mode]);
+  // Данные о заряде батареи доски  
+  display.setCursor(2, 54);
+  display.print("BATT:"); display.setCursor(40, 54); display.print(board_battery);
+  // Данные о температуре доски
+  display.setCursor(68, 30);
+  display.print("TEMP:"); display.setCursor(100, 30); display.print(board_temp);
+  display.drawCircle(114, 32, 1, HIGH);
+  // Данные о работе подсветки
+  display.setCursor(68, 42);
+  display.print("LGHT:"); display.setCursor(100, 42); display.print(is_lights);
   display.display();
 }
 
@@ -135,45 +139,57 @@ void setup() {
 
 void loop() {
   button.tick();
-
-  power = map(analogRead(A1), 0, 1023, 0, 255); // Данные о положении потенциометра
-
-  if (button.isDouble()) { // Если кнопка была нажата два раза
-    motor_mode = switchMotorMode(motor_mode, true); // Выбираем следущий режим
-  }
-  if (button.isHolded()) { // Если было долгое нажатие на кнопку
-    motor_mode = mmOff; // Включаем режим настроек
+  if (millis() - battery_timer > 60000) {
+    battery_timer = millis();
+    battery.update();
   }
 
-  if (millis() - connect_timer > 4000 && is_connect) {
-    is_connect = false;
+  if (is_display && millis() - display_timer > 30000) {
+    is_display = false;
+    display.clearDisplay();
+    display.display();
   }
-  
+
   // Подготавливаем данные для отправки
   send_data[0] = power; // Данные о положении потенциометра
   send_data[1] = motor_mode; // Двойное нажатие кнопки
   // Отправеляем данные
   radio.write(&send_data, 3);
-
+  
   // Получаем данные от приемника
-  if (radio.isAckPayloadAvailable()) { // Если в буфере имеются принятые данные из пакета подтверждения приёма, то
+   if (radio.isAckPayloadAvailable()) { // Если в буфере имеются принятые данные из пакета подтверждения приёма, то
     radio.read(&got_data, sizeof(got_data)); // Читаем данные из буфера в массив got_data указывая сколько всего байт может поместиться в массив.
     Serial.println("got");
     connect_timer = millis();
     is_connect = true;
-    battery_proc = got_data[0];
-    motor_temp = got_data[1];
+    board_battery = got_data[0];
+    board_temp = got_data[1];
   }
 
+  power = map(analogRead(A1), 0, 1023, 0, 255); // Данные о положении потенциометра
+
+  if (button.isPress()) {
+    display_timer = millis();
+    is_display = true;
+  }
+
+  if (button.isClick()) { // Если кнопка была нажата два раза
+    motor_mode = switchMotorMode(motor_mode, true); // Выбираем следущий режим
+  }
+  if (button.isHold()) { // Если было долгое нажатие на кнопку
+    motor_mode = mmOff; // Включаем режим настроек
+  }
+  if (button.isDouble()) {
+    is_lights = !is_lights;
+  }
+
+  if (millis() - connect_timer > 4000 && is_connect) {
+    is_connect = false;
+  }
+
+
   // Выводим информацию на димплей
-  showDisp();
-
-
-
-
-
-
-
-
-
+  if (is_display) {
+    showDisp();
+  }
 }
