@@ -74,20 +74,24 @@ void loop() {
 
       motor.setPower(got_data[0]);  // Данные о положение потенциометра
       motor.setMode(got_data[1]); // Данные о выбранном режиме
+      is_light = got_data[2];
 
       send_data[0] = 20; // Отправляем данные о заряде
       send_data[1] = 30; // Отправляем данные о температуре
     }
 
-    if (millis() - radio_timer > 3000) { // Если данные от пульта не поступали больше 3 сикунд
+    if (millis() - radio_timer > 5000) { // Если данные от пульта не поступали больше 5 сикунд
       // Выключаем мотор
       motor.setMode(Motor::mOff);
       motor.setPower(0);
       radio_timer = millis();
     }
-
-    light.oneColor();
-
+    if (is_light) {
+      light.oneColor();
+    }
+    else {
+      // Выключить подсветку
+    }
   }
 
   // Режим настроек

@@ -28,7 +28,7 @@ unsigned long connect_timer;
 unsigned long battery_timer;
 unsigned long display_timer;
 bool is_connect;
-bool is_lights;
+bool is_light;
 
 
 
@@ -57,7 +57,7 @@ void showDisp() {
 
   disp_timer = millis();
   // Обновляем экран два раза в секунду.
-  display.clearDisplay();
+  display.fillScreen(LOW);
   display.setTextColor(WHITE, BLACK);
   display.setTextSize(1);
 
@@ -94,7 +94,7 @@ void showDisp() {
   display.drawCircle(114, 32, 1, HIGH);
   // Данные о работе подсветки
   display.setCursor(68, 42);
-  display.print("LGHT:"); display.setCursor(100, 42); display.print(is_lights);
+  display.print("LGHT:"); display.setCursor(100, 42); display.print(is_light);
   display.display();
 }
 
@@ -146,14 +146,14 @@ void loop() {
 
   if (is_display && millis() - display_timer > 30000) {
     is_display = false;
-    display.clearDisplay();
+    display.fillScreen(LOW);
     display.display();
   }
 
   // Подготавливаем данные для отправки
   send_data[0] = power; // Данные о положении потенциометра
   send_data[1] = motor_mode; // Двойное нажатие кнопки
-  send_data[2] = is_lights;
+  send_data[2] = is_light;
   // Отправеляем данные
   radio.write(&send_data, 3);
   
@@ -170,18 +170,20 @@ void loop() {
   power = map(analogRead(A1), 0, 1023, 0, 255); // Данные о положении потенциометра
 
   if (button.isClick()) { // Если кнопка была нажата два раза
-    motor_mode = switchMotorMode(motor_mode, true); // Выбираем следущий режим
+    if (is_display)
+      motor_mode = switchMotorMode(motor_mode, true); // Выбираем следущий режим  
+    else
+      is_display = true;
     display_timer = millis();
-    is_display = true;
   }
   if (button.isHold()) { // Если было долгое нажатие на кнопку
     motor_mode = mmOff; // Включаем режим настроек
   }
   if (button.isDouble()) {
-    is_lights = !is_lights;
+    is_light = !is_light;
   }
 
-  if (millis() - connect_timer > 4000 && is_connect) {
+  if (millis() - connect_timer > 5000 && is_connect) {
     is_connect = false;
   }
 
