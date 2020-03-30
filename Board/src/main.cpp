@@ -6,14 +6,11 @@
 
 #include "motor.h"
 #include "main.h"
-#include "light.h"
-
-#define NUM_LEDS 32
-#define DATA_PIN 5
 
 RF24 radio(RADIO_CS_PIN, RADIO_DO_PIN);
 Motor motor(MOTOR_PIN);
-Light light(DATA_PIN);
+CRGB leds_[NUM_LEDS];
+
 
 LightsMode lights_mode;
 
@@ -34,7 +31,8 @@ void setup() {
 
   pinMode(BUTT_PIN, INPUT_PULLUP);
 
-  light.begin();
+  FastLED.addLeds<WS2812B, LEDS_PIN, GRB>(leds_, NUM_LEDS).setCorrection(TypicalLEDStrip);
+  FastLED.setBrightness(50);
   
   radio.begin(); //активировать модуль
   radio.setAutoAck(1);         //режим подтверждения приёма, 1 вкл 0 выкл
@@ -87,12 +85,20 @@ void loop() {
       radio_timer = millis();
     }
     if (is_light) {
-      light.oneColor();
+      switch(lights_mode) {
+        case emLights: 
+          fill_solid(&(leds_[0]), NUM_LEDS, CRGB(255, 255, 255));
+          break;
+      }
+
     }
     else {
       // Выключить подсветку
+      FastLED.clear();
     }
   }
+
+
 
   // Режим настроек
   else { // В режиме настроек включаем спорт режим
@@ -103,6 +109,6 @@ void loop() {
       motor.setPower(0);
   }
 
-
+  FastLED.show();
   motor.update();
 }
