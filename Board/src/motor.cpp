@@ -31,14 +31,19 @@ void Motor::update() {
         temp_ = sensor_.getTempCByIndex(0);
     }
     
-    if (int(power_ - value) > int(motor_spec_[mode_][0])) {
-        if (millis() - motor_delay_ > motor_spec_[mode_][1]) {
-            motor_delay_ = millis();
-            value += motor_spec_[mode_][0];
+    if (temp_ <= 90) {
+        if (int(power_ - value) > int(motor_spec_[mode_][0])) {
+            if (millis() - motor_delay_ > motor_spec_[mode_][1]) {
+                motor_delay_ = millis();
+                value += motor_spec_[mode_][0];
+            }
+        }
+        else {
+            value = power_;
         }
     }
     else {
-        value = power_;
+        value = 0;
     }
 
     Serial.print(mode_); Serial.print("    "); Serial.println(value);

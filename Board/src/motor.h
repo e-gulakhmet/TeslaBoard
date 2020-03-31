@@ -30,6 +30,7 @@ class Motor {
         void switchMode(bool clockwice);
         uint8_t getModeName() {return mode_;}
         uint8_t getPower() {return power_;}
+        uint8_t getTemp() {return temp_;}
 
     private:
         uint8_t motor_pin_;
