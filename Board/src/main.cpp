@@ -8,11 +8,10 @@
 #include "main.h"
 
 RF24 radio(RADIO_CS_PIN, RADIO_DO_PIN);
-Motor motor(MOTOR_PIN);
-CRGB leds_[NUM_LEDS];
+Motor motor(MOTOR_PIN, TEMP_PIN);
+CRGB leds[NUM_LEDS];
 
-
-LightsMode lights_mode;
+LightsMode lights_mode = emOneColor;
 
 byte got_data[3];
 byte send_data[3];
@@ -20,10 +19,36 @@ bool is_light = true;
 bool is_setting;
 unsigned long send_timer;
 unsigned long radio_timer;
-uint8_t counter;
+uint8_t idex;
+uint8_t thishue = 0;
+uint8_t thissat = 255;
 
 
 // TODO: Дабавить датчик температуры
+
+
+boolean safeDelay(int delTime) {
+  static bool change_flag;
+  uint32_t thisTime = millis();
+  while (millis() - thisTime <= delTime) {
+    if (change_flag) {
+      change_flag = false;
+      return true;
+    }
+  }
+  return false;
+}
+
+
+
+int antipodal_index(int i) {
+  int iN = i + NUM_LEDS / 2;
+  if (i >= NUM_LEDS / 2) {
+    iN = (i + NUM_LEDS / 2) % NUM_LEDS;
+  }
+  return iN;
+}
+
 
 
 void setup() {
@@ -31,7 +56,7 @@ void setup() {
 
   pinMode(BUTT_PIN, INPUT_PULLUP);
 
-  FastLED.addLeds<WS2812B, LEDS_PIN, GRB>(leds_, NUM_LEDS).setCorrection(TypicalLEDStrip);
+  FastLED.addLeds<WS2812B, LEDS_PIN, GRB>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
   FastLED.setBrightness(50);
   
   radio.begin(); //активировать модуль
@@ -85,12 +110,70 @@ void loop() {
       radio_timer = millis();
     }
     if (is_light) {
-      switch(lights_mode) {
-        case emLights: 
-          fill_solid(&(leds_[0]), NUM_LEDS, CRGB(255, 255, 255));
+      switch (lights_mode) {
+        case emOneColor: {
+          fill_solid(&(leds[0]), NUM_LEDS, CRGB::Purple);
           break;
-      }
+        }
 
+        case emLights: {
+          fill_solid(&(leds[0]), NUM_LEDS, CRGB::White);
+          break;
+        } 
+        
+        case emPolice: {
+          idex++;
+          if (idex >= NUM_LEDS) {
+            idex = 0;
+          }
+          int idexR = idex;
+          int idexB = antipodal_index(idexR);
+          int thathue = (thishue + 160) % 255;
+          for (int i = 0; i < NUM_LEDS; i++ ) {
+            if (i == idexR) {
+              leds[i] = CHSV(thishue, thissat, 255);
+            }
+            else if (i == idexB) {
+              leds[i] = CHSV(thathue, thissat, 255);
+            }
+            else {
+              leds[i] = CHSV(0, 0, 0);
+            }
+          }
+          FastLED.show();
+          if (safeDelay(10)) return;
+          break;
+        }
+
+        case emPoliceStrobe: {
+          idex++;
+          if (idex >= NUM_LEDS) {
+            idex = 0;
+          }
+          int idexR = idex;
+          int idexB = antipodal_index(idexR);
+          int thathue = (thishue + 160) % 255;
+          leds[idexR] = CHSV(thishue, thissat, 255);
+          leds[idexB] = CHSV(thathue, thissat, 255);
+          FastLED.show();
+          if (safeDelay(10)) return;
+          break;
+        }
+        
+        case emRainbow: {
+          static uint8_t ihue;
+          ihue++;
+          if (ihue > 255) {
+            ihue = 0;
+          }
+          for (int idex = 0 ; idex < NUM_LEDS; idex++ ) {
+            leds[idex] = CHSV(ihue, thissat, 255);
+          }
+          FastLED.show();
+          if (safeDelay(10)) return;
+          break;
+        }
+      }
     }
     else {
       // Выключить подсветку

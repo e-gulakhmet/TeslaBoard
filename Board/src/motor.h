@@ -3,6 +3,8 @@
 
 #include <Arduino.h>
 #include <Servo.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
 
 /*
 Класс отвечающий за работу мотора.
@@ -12,7 +14,7 @@
 
 class Motor {
     public:
-        Motor(uint8_t motor_pin);
+        Motor(uint8_t motor_pin, uint8_t temp_pin);
 
         typedef enum {
             mOff,
@@ -31,7 +33,9 @@ class Motor {
 
     private:
         uint8_t motor_pin_;
+        uint8_t temp_pin_;
         uint8_t power_;
+        uint8_t temp_;
         
         uint16_t motor_spec_[4][3] = {
             // 0 - Максимальное изменение(0 - 255),
@@ -47,6 +51,8 @@ class Motor {
 
         Mode mode_;
         Servo motor_;
+        OneWire oneWire_;
+        DallasTemperature sensor_;
 };
 
 

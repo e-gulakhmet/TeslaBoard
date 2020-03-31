@@ -1,11 +1,14 @@
 #include "motor.h"
 
 
-Motor::Motor(uint8_t motor_pin)
+Motor::Motor(uint8_t motor_pin, uint8_t temp_pin)
     : motor_pin_(motor_pin)
+    , temp_pin_(temp_pin)
     , power_(0)
     , motor_delay_(0)
     , mode_(mComfort)
+    , oneWire_(temp_pin_)
+    , sensor_(&oneWire_)
     {
     }
 
@@ -14,12 +17,19 @@ Motor::Motor(uint8_t motor_pin)
 void Motor::begin() {
     motor_.attach(motor_pin_);
     motor_.writeMicroseconds(800);
+    sensor_.begin();
 }
 
 
 
 void Motor::update() {
     static uint8_t value;
+    static unsigned long timer;
+
+    if (millis() - timer > 10000) {
+        sensor_.requestTemperatures();
+        temp_ = sensor_.getTempCByIndex(0);
+    }
     
     if (int(power_ - value) > int(motor_spec_[mode_][0])) {
         if (millis() - motor_delay_ > motor_spec_[mode_][1]) {
@@ -42,19 +52,6 @@ void Motor::setPower(uint8_t value) {
         return;
     
     power_ = value;
-    
-    // if (int(value - power_) > int(motor_spec_[mode_][0])) {
-    //     if (millis() - motor_delay_ > motor_spec_[mode_][1]) {
-    //         motor_delay_ = millis();
-    //         power_ += motor_spec_[mode_][0];
-    //     }
-    // }
-    // else {
-    //     power_ = value;
-    // }
-
-    // Serial.print(mode_); Serial.print("    "); Serial.println(power_);
-    // motor_.writeMicroseconds(map(power_, 0, 255, 800, motor_spec_[mode_][2]));
 }
 
 
