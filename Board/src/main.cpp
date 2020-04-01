@@ -11,11 +11,11 @@ RF24 radio(RADIO_CS_PIN, RADIO_CSN_PIN);
 Motor motor(MOTOR_PIN, TEMP_PIN);
 CRGB leds[NUM_LEDS];
 
-LightsMode lights_mode = emOneColor;
+LightsMode lights_mode = emPoliceAll;
 
-byte got_data[4];
-byte send_data[4];
-bool is_light = true;
+byte got_data[3];
+byte send_data[3];
+bool is_light;
 bool is_setting;
 unsigned long send_timer;
 unsigned long radio_timer;
@@ -24,10 +24,10 @@ uint8_t thishue = 0;
 uint8_t thissat = 255;
 
 
-boolean safeDelay(int delTime) {
+boolean safeDelay(int del_time) {
   static bool change_flag;
-  uint32_t thisTime = millis();
-  while (millis() - thisTime <= delTime) {
+  uint32_t this_time = millis();
+  while (millis() - this_time <= del_time) {
     if (change_flag) {
       change_flag = false;
       return true;
@@ -52,7 +52,7 @@ void setup() {
   pinMode(BUTT_PIN, INPUT_PULLUP);
 
   FastLED.addLeds<WS2812B, LEDS_PIN, GRB>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
-  FastLED.setBrightness(50);
+  FastLED.setBrightness(100);
   
   radio.begin(); //активировать модуль
   radio.setAutoAck(1);         //режим подтверждения приёма, 1 вкл 0 выкл
@@ -138,7 +138,7 @@ void loop() {
             }
           }
           FastLED.show();
-          if (safeDelay(10)) return;
+          if (safeDelay(30)) return;
           break;
         }
 
@@ -153,7 +153,7 @@ void loop() {
           leds[idexR] = CHSV(thishue, thissat, 255);
           leds[idexB] = CHSV(thathue, thissat, 255);
           FastLED.show();
-          if (safeDelay(10)) return;
+          if (safeDelay(30)) return;
           break;
         }
         
@@ -178,8 +178,6 @@ void loop() {
       FastLED.show();
     }
   }
-
-
 
   // Режим настроек
   else { // В режиме настроек включаем спорт режим

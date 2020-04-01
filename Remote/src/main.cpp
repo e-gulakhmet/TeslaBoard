@@ -17,8 +17,8 @@ Power battery(POWER_PIN, BATTERY_PIN);
 
 MotorMode motor_mode = mmComfort;
 
-byte send_data[4];
-byte got_data[4];
+byte send_data[3];
+byte got_data[3];
 bool is_display = true;
 uint8_t power;
 String mode_name[4] = {"Off", "Eco", "Normal", "Sport"};
@@ -135,6 +135,7 @@ void setup() {
   display.clearDisplay();
   display.display();
 }
+
 
 
 void loop() {
