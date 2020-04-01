@@ -17,8 +17,8 @@ Power battery(POWER_PIN, BATTERY_PIN);
 
 MotorMode motor_mode = mmComfort;
 
-byte send_data[3];
-byte got_data[3];
+byte send_data[4];
+byte got_data[4];
 bool is_display = true;
 uint8_t power;
 String mode_name[4] = {"Off", "Eco", "Normal", "Sport"};
@@ -155,7 +155,7 @@ void loop() {
   send_data[1] = motor_mode; // Двойное нажатие кнопки
   send_data[2] = is_light;
   // Отправеляем данные
-  radio.write(&send_data, 3);
+  radio.write(&send_data, sizeof(send_data));
   
   // Получаем данные от приемника
    if (radio.isAckPayloadAvailable()) { // Если в буфере имеются принятые данные из пакета подтверждения приёма, то

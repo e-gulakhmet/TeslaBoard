@@ -27,10 +27,10 @@ class Motor {
         void update();
         void setPower(uint8_t value); // Установка мощности мотора(0 - 255)
         void setMode(uint8_t mode); // Выбор режима
-        void switchMode(bool clockwice);
-        uint8_t getModeName() {return mode_;}
-        uint8_t getPower() {return power_;}
-        uint8_t getTemp() {return temp_;}
+        void switchMode(bool clockwice); // Переключение текущего режима по часовой стрелке или против
+        uint8_t getModeIndex() {return mode_;} // Получаем номер текущего режима
+        uint8_t getPower() {return power_;} // Получаем текущюю скорость
+        uint8_t getTemp() {return temp_;} // Получаем данные о температуре драйвера
 
     private:
         uint8_t motor_pin_;
@@ -44,7 +44,7 @@ class Motor {
             // 2 - Максимальное значение частоты работы мотора(800 - 2300)
             {255, 0, 800},
             {10, 250, 1200},
-            {50, 150, 1800},
+            {40, 150, 1800},
             {254, 0, 2300}
         };
 

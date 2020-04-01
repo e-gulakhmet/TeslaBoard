@@ -18,6 +18,8 @@ void Motor::begin() {
     motor_.attach(motor_pin_);
     motor_.writeMicroseconds(800);
     sensor_.begin();
+    sensor_.requestTemperatures();
+    temp_ = sensor_.getTempCByIndex(0);
 }
 
 
@@ -26,12 +28,14 @@ void Motor::update() {
     static uint8_t value;
     static unsigned long timer;
 
-    if (millis() - timer > 10000) {
+    if (millis() - timer > 10000) { // Получаем данные о температуре каждые 10 сек
+        timer = millis(); 
         sensor_.requestTemperatures();
         temp_ = sensor_.getTempCByIndex(0);
     }
     
-    if (temp_ <= 90) {
+    if (temp_ <= 60) { // Если температура меньше 60 градусов
+        // Управляем мотором
         if (int(power_ - value) > int(motor_spec_[mode_][0])) {
             if (millis() - motor_delay_ > motor_spec_[mode_][1]) {
                 motor_delay_ = millis();
@@ -42,7 +46,7 @@ void Motor::update() {
             value = power_;
         }
     }
-    else {
+    else { // Если температура больше 60
         value = 0;
     }
 

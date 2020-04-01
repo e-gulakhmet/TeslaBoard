@@ -7,14 +7,14 @@
 #include "motor.h"
 #include "main.h"
 
-RF24 radio(RADIO_CS_PIN, RADIO_DO_PIN);
+RF24 radio(RADIO_CS_PIN, RADIO_CSN_PIN);
 Motor motor(MOTOR_PIN, TEMP_PIN);
 CRGB leds[NUM_LEDS];
 
 LightsMode lights_mode = emOneColor;
 
-byte got_data[3];
-byte send_data[3];
+byte got_data[4];
+byte send_data[4];
 bool is_light = true;
 bool is_setting;
 unsigned long send_timer;
@@ -22,9 +22,6 @@ unsigned long radio_timer;
 uint8_t idex;
 uint8_t thishue = 0;
 uint8_t thissat = 255;
-
-
-// TODO: Дабавить датчик температуры
 
 
 boolean safeDelay(int delTime) {
@@ -38,8 +35,6 @@ boolean safeDelay(int delTime) {
   }
   return false;
 }
-
-
 
 int antipodal_index(int i) {
   int iN = i + NUM_LEDS / 2;
@@ -113,11 +108,13 @@ void loop() {
       switch (lights_mode) {
         case emOneColor: {
           fill_solid(&(leds[0]), NUM_LEDS, CRGB::Purple);
+          FastLED.show();
           break;
         }
 
         case emLights: {
           fill_solid(&(leds[0]), NUM_LEDS, CRGB::White);
+          FastLED.show();
           break;
         } 
         
@@ -145,7 +142,7 @@ void loop() {
           break;
         }
 
-        case emPoliceStrobe: {
+        case emPoliceAll: {
           idex++;
           if (idex >= NUM_LEDS) {
             idex = 0;
@@ -178,6 +175,7 @@ void loop() {
     else {
       // Выключить подсветку
       FastLED.clear();
+      FastLED.show();
     }
   }
 
@@ -192,6 +190,5 @@ void loop() {
       motor.setPower(0);
   }
 
-  FastLED.show();
   motor.update();
 }
