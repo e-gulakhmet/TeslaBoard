@@ -50,7 +50,6 @@ void Motor::update() {
         value = 0;
     }
 
-    Serial.print(mode_); Serial.print("    "); Serial.println(value);
     motor_.writeMicroseconds(map(value, 0, 255, 800, motor_spec_[mode_][2]));
 }
 

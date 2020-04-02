@@ -14,6 +14,7 @@ CRGB leds[NUM_LEDS];
 SoftwareSerial btSerial(BL_RX, BL_TX);
 
 LightsMode lights_mode = emPoliceAll;
+BluetoothMode bl_mode;
 
 byte got_data[3];
 byte send_data[3];
@@ -27,8 +28,8 @@ uint8_t thissat = 255;
 boolean getStarted;
 byte index;
 String string_convert = "";
-int intData[4];     // массив численных значений после парсинга
-boolean recievedFlag;
+int bl_data[4];     // массив численных значений после парсинга
+boolean is_bluetooth;
 
 
 
@@ -61,7 +62,7 @@ void parsing() {
       if (incomingByte != ' ' && incomingByte != ';') {   // если это не пробел И не конец
         string_convert += incomingByte;       // складываем в строку
       } else {                                // если это пробел или ; конец пакета
-        intData[index] = string_convert.toInt();  // преобразуем строку в int и кладём в массив
+        bl_data[index] = string_convert.toInt();  // преобразуем строку в int и кладём в массив
         string_convert = "";                  // очищаем строку
         index++;                              // переходим к парсингу следующего элемента массива
       }
@@ -73,7 +74,7 @@ void parsing() {
     }
     if (incomingByte == ';') {                // если таки приняли ; - конец парсинга
       getStarted = false;                     // сброс
-      recievedFlag = true;                    // флаг на принятие
+      is_bluetooth = true;                    // флаг на принятие
     }
   }
 }
@@ -87,6 +88,8 @@ void setup() {
 
   FastLED.addLeds<WS2812B, LEDS_PIN, GRB>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
   FastLED.setBrightness(100);
+  FastLED.clear();
+  FastLED.show();
 
   btSerial.begin(9600);
   
@@ -115,31 +118,51 @@ void setup() {
 
 
 void loop() {
+  parsing();
   if (!is_setting) {
-    byte pipeNo;
-    if (radio.available(&pipeNo)) { // слушаем эфир со всех труб
-      radio.read(&got_data, sizeof(got_data)); // читаем входящий сигнал
-      if (millis() - send_timer > 2000) { // Отправляем данные обратно каждые 2 секунды
-        radio.writeAckPayload(1, &send_data, sizeof(send_data));
-        send_timer = millis();
+    if (is_bluetooth) {
+      bl_mode = static_cast<BluetoothMode>(bl_data[0]);
+      Serial.println(bl_data[1]);
+      switch (bl_mode) {
+        case bmMain: {
+          motor.setMode(bl_data[1]);
+          int value = map(bl_data[2], 450, 50, 0, 255);
+          value = constrain(value, 0, 255);
+          motor.setPower(value);
+          break;
+        }
       }
 
-      radio_timer = millis(); // Сбрасываем таймер подключения
-
-      motor.setPower(got_data[0]);  // Данные о положение потенциометра
-      motor.setMode(got_data[1]); // Данные о выбранном режиме
-      is_light = got_data[2];
-
-      send_data[0] = 20; // Отправляем данные о заряде
-      send_data[1] = motor.getTemp(); // Отправляем данные о температуре
     }
 
-    if (millis() - radio_timer > 5000) { // Если данные от пульта не поступали больше 5 сикунд
-      // Выключаем мотор
-      motor.setMode(Motor::mOff);
-      motor.setPower(0);
-      radio_timer = millis();
+
+    else {
+      byte pipeNo;
+      if (radio.available(&pipeNo)) { // слушаем эфир со всех труб
+        radio.read(&got_data, sizeof(got_data)); // читаем входящий сигнал
+        if (millis() - send_timer > 2000) { // Отправляем данные обратно каждые 2 секунды
+          radio.writeAckPayload(1, &send_data, sizeof(send_data));
+          send_timer = millis();
+        }
+
+        radio_timer = millis(); // Сбрасываем таймер подключения
+
+        motor.setPower(got_data[0]);  // Данные о положение потенциометра
+        motor.setMode(got_data[1]); // Данные о выбранном режиме
+        is_light = got_data[2];
+
+        send_data[0] = 20; // Отправляем данные о заряде
+        send_data[1] = motor.getTemp(); // Отправляем данные о температуре
+      }
+
+      if (millis() - radio_timer > 5000) { // Если данные от пульта не поступали больше 5 сикунд
+        // Выключаем мотор
+        motor.setMode(Motor::mOff);
+        motor.setPower(0);
+        radio_timer = millis();
+      }
     }
+
     if (is_light) {
       switch (lights_mode) {
         case emOneColor: {
@@ -174,7 +197,7 @@ void loop() {
             }
           }
           FastLED.show();
-          if (safeDelay(30)) return;
+          if (safeDelay(20)) return;
           break;
         }
 
@@ -189,7 +212,7 @@ void loop() {
           leds[idexR] = CHSV(thishue, thissat, 255);
           leds[idexB] = CHSV(thathue, thissat, 255);
           FastLED.show();
-          if (safeDelay(30)) return;
+          if (safeDelay(20)) return;
           break;
         }
         
@@ -207,11 +230,6 @@ void loop() {
           break;
         }
       }
-    }
-    else {
-      // Выключить подсветку
-      FastLED.clear();
-      FastLED.show();
     }
   }
 
