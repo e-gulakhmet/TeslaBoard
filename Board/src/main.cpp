@@ -13,12 +13,12 @@ Motor motor(MOTOR_PIN, TEMP_PIN);
 CRGB leds[NUM_LEDS];
 SoftwareSerial btSerial(BL_RX, BL_TX);
 
-LightsMode lights_mode = emPoliceAll;
+LightsMode lights_mode = emOneColor;
 BluetoothMode bl_mode;
 
 byte got_data[3];
 byte send_data[3];
-bool is_light;
+bool is_light = true;
 bool is_setting;
 unsigned long send_timer;
 unsigned long radio_timer;
@@ -30,6 +30,9 @@ byte index;
 String string_convert = "";
 int bl_data[4];     // массив численных значений после парсинга
 boolean is_bluetooth;
+uint8_t led_red = 215;
+uint8_t led_green = 31;
+uint8_t led_blue = 64;
 
 
 
@@ -122,13 +125,28 @@ void loop() {
   if (!is_setting) {
     if (is_bluetooth) {
       bl_mode = static_cast<BluetoothMode>(bl_data[0]);
-      Serial.println(bl_data[1]);
+
       switch (bl_mode) {
         case bmMain: {
           motor.setMode(bl_data[1]);
-          int value = map(bl_data[2], 450, 50, 0, 255);
+          int value = map(bl_data[2], 20, 480, 0, 255);
           value = constrain(value, 0, 255);
           motor.setPower(value);
+          break;
+        }
+        
+        case bmLight: {
+          is_light = bl_data[1];
+          FastLED.setBrightness(bl_data[3]);
+          lights_mode = static_cast<LightsMode>(bl_data[2]);
+          switch (lights_mode) {
+            case emOneColor: {
+              led_red = bl_data[4];
+              led_green = bl_data[5];
+              led_blue = bl_data[6];
+              break;
+            }
+          }
           break;
         }
       }
@@ -144,6 +162,8 @@ void loop() {
           radio.writeAckPayload(1, &send_data, sizeof(send_data));
           send_timer = millis();
         }
+
+        Serial.println("got");
 
         radio_timer = millis(); // Сбрасываем таймер подключения
 
@@ -166,7 +186,7 @@ void loop() {
     if (is_light) {
       switch (lights_mode) {
         case emOneColor: {
-          fill_solid(&(leds[0]), NUM_LEDS, CRGB::Purple);
+          fill_solid(&(leds[0]), NUM_LEDS, CRGB(led_red, led_green, led_blue));
           FastLED.show();
           break;
         }
