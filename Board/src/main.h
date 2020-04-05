@@ -39,10 +39,6 @@ typedef enum { // Режимы подсветки
     emRainbow, // Радуга
 } LightsMode;
 
-typedef enum {
-    bmMain = 0,
-    bmLight
-} BluetoothMode;
 
 
 #endif // _MAIN_H_

@@ -7,14 +7,15 @@
 
 #include "motor.h"
 #include "main.h"
+#include "bluetooth.h"
 
 RF24 radio(RADIO_CS_PIN, RADIO_CSN_PIN);
 Motor motor(MOTOR_PIN, TEMP_PIN);
 CRGB leds[NUM_LEDS];
-SoftwareSerial btSerial(BL_RX, BL_TX);
+//SoftwareSerial btSerial(BL_RX, BL_TX);
+Bluetooth blt(BL_RX, BL_TX);
 
 LightsMode lights_mode = emOneColor;
-BluetoothMode bl_mode;
 
 byte got_data[3];
 byte send_data[3];
@@ -25,8 +26,6 @@ unsigned long radio_timer;
 uint8_t idex;
 uint8_t thishue = 0;
 uint8_t thissat = 255;
-boolean getStarted;
-String string_convert = "";
 int bl_data[6];     // массив численных значений после парсинга
 boolean is_bluetooth;
 uint8_t color = 2;
@@ -57,30 +56,32 @@ int antipodal_index(int i) {
 
 
 
-void parsing() {
-  static uint8_t index;
-  if (btSerial.available() > 0) {
-    char incomingByte = btSerial.read();        // обязательно ЧИТАЕМ входящий символ
-    if (getStarted) {                         // если приняли начальный символ (парсинг разрешён)
-      if (incomingByte != ' ' && incomingByte != ';') {   // если это не пробел И не конец
-        string_convert += incomingByte;       // складываем в строку
-      } else {                                // если это пробел или ; конец пакета
-        bl_data[index] = string_convert.toInt();  // преобразуем строку в int и кладём в массив
-        string_convert = "";                 // очищаем строку
-        index++;                              // переходим к парсингу следующего элемента массива
-      }
-    }
-    if (incomingByte == '$') {                // если это $
-      getStarted = true;                      // поднимаем флаг, что можно парсить
-      index = 0;                              // сбрасываем индекс
-      string_convert = "";                    // очищаем строку
-    }
-    if (incomingByte == ';') {                // если таки приняли ; - конец парсинга
-      getStarted = false;                     // сброс
-      is_bluetooth = true;                    // флаг на принятие
-    }
-  }
-}
+// void parsing() {
+//   static uint8_t index;
+//   static String string_convert = "";
+//   static boolean getStarted;
+//   if (btSerial.available() > 0) {
+//     char incomingByte = btSerial.read();        // обязательно ЧИТАЕМ входящий символ
+//     if (getStarted) {                         // если приняли начальный символ (парсинг разрешён)
+//       if (incomingByte != ' ' && incomingByte != ';') {   // если это не пробел И не конец
+//         string_convert += incomingByte;       // складываем в строку
+//       } else {                                // если это пробел или ; конец пакета
+//         bl_data[index] = string_convert.toInt();  // преобразуем строку в int и кладём в массив
+//         string_convert = "";                 // очищаем строку
+//         index++;                              // переходим к парсингу следующего элемента массива
+//       }
+//     }
+//     if (incomingByte == '$') {                // если это $
+//       getStarted = true;                      // поднимаем флаг, что можно парсить
+//       index = 0;                              // сбрасываем индекс
+//       string_convert = "";                    // очищаем строку
+//     }
+//     if (incomingByte == ';') {                // если таки приняли ; - конец парсинга
+//       getStarted = false;                     // сброс
+//       is_bluetooth = true;                    // флаг на принятие
+//     }
+//   }
+// }
 
 
 
@@ -94,7 +95,7 @@ void setup() {
   FastLED.clear();
   FastLED.show();
 
-  btSerial.begin(9600);
+  //btSerial.begin(9600);
   
   radio.begin(); //активировать модуль
   radio.setAutoAck(1);         //режим подтверждения приёма, 1 вкл 0 выкл
@@ -121,42 +122,14 @@ void setup() {
 
 
 void loop() {
-  parsing();
+  //parsing();
+  blt.update();
+
   if (!is_setting) {
-    Serial.println(bl_data[1]);
-    if (is_bluetooth) {
-      bl_mode = static_cast<BluetoothMode>(bl_data[0]);
 
-      switch (bl_mode) {
-        case bmMain: {
-          motor.setMode(bl_data[1]);
-          int value = map(bl_data[2], 20, 480, 0, 255);
-          value = constrain(value, 0, 255);
-          motor.setPower(value);
-          break;
-        }
-        
-        case bmLight: {
-          is_light = bl_data[1];
-          FastLED.setBrightness(bl_data[3]);
-          lights_mode = static_cast<LightsMode>(bl_data[2]);
-          switch (lights_mode) {
-            case emOneColor: {
-              color = bl_data[4];
-              break;
-            }
-
-            case emLights: {
-              is_blink = bl_data[4];
-              break;
-            }
-          }
-          break;
-        }
-      }
+    if(blt.isConnect()) {
 
     }
-
 
     else {
       byte pipeNo;
