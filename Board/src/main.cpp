@@ -26,13 +26,12 @@ uint8_t idex;
 uint8_t thishue = 0;
 uint8_t thissat = 255;
 boolean getStarted;
-byte index;
 String string_convert = "";
-int bl_data[4];     // массив численных значений после парсинга
+int bl_data[6];     // массив численных значений после парсинга
 boolean is_bluetooth;
-uint8_t led_red = 215;
-uint8_t led_green = 31;
-uint8_t led_blue = 64;
+uint8_t color = 2;
+bool is_blink;
+bool is_all_leds;
 
 
 
@@ -59,6 +58,7 @@ int antipodal_index(int i) {
 
 
 void parsing() {
+  static uint8_t index;
   if (btSerial.available() > 0) {
     char incomingByte = btSerial.read();        // обязательно ЧИТАЕМ входящий символ
     if (getStarted) {                         // если приняли начальный символ (парсинг разрешён)
@@ -66,7 +66,7 @@ void parsing() {
         string_convert += incomingByte;       // складываем в строку
       } else {                                // если это пробел или ; конец пакета
         bl_data[index] = string_convert.toInt();  // преобразуем строку в int и кладём в массив
-        string_convert = "";                  // очищаем строку
+        string_convert = "";                 // очищаем строку
         index++;                              // переходим к парсингу следующего элемента массива
       }
     }
@@ -123,6 +123,7 @@ void setup() {
 void loop() {
   parsing();
   if (!is_setting) {
+    Serial.println(bl_data[1]);
     if (is_bluetooth) {
       bl_mode = static_cast<BluetoothMode>(bl_data[0]);
 
@@ -141,9 +142,12 @@ void loop() {
           lights_mode = static_cast<LightsMode>(bl_data[2]);
           switch (lights_mode) {
             case emOneColor: {
-              led_red = bl_data[4];
-              led_green = bl_data[5];
-              led_blue = bl_data[6];
+              color = bl_data[4];
+              break;
+            }
+
+            case emLights: {
+              is_blink = bl_data[4];
               break;
             }
           }
@@ -162,8 +166,6 @@ void loop() {
           radio.writeAckPayload(1, &send_data, sizeof(send_data));
           send_timer = millis();
         }
-
-        Serial.println("got");
 
         radio_timer = millis(); // Сбрасываем таймер подключения
 
@@ -186,7 +188,7 @@ void loop() {
     if (is_light) {
       switch (lights_mode) {
         case emOneColor: {
-          fill_solid(&(leds[0]), NUM_LEDS, CRGB(led_red, led_green, led_blue));
+          fill_solid(&(leds[0]), NUM_LEDS, CRGB(color_pallete[color][0], color_pallete[color][1], color_pallete[color][2]));
           FastLED.show();
           break;
         }
