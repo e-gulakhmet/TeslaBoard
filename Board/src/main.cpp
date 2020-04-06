@@ -2,7 +2,6 @@
 #include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
-//#include <FastLED.h>
 #include <SoftwareSerial.h>
 
 #include "motor.h"
@@ -12,7 +11,6 @@
 
 RF24 radio(RADIO_CS_PIN, RADIO_CSN_PIN);
 Motor motor(MOTOR_PIN, TEMP_PIN);
-//CRGB leds[NUM_LEDS];
 Light leds(LEDS_PIN, NUM_LEDS);
 Bluetooth blt(BL_RX, BL_TX);
 
@@ -131,74 +129,7 @@ void loop() {
       }
     }
 
-    // if (is_light) {
-    //   switch (lights_mode) {
-    //     case emOneColor: {
-    //       fill_solid(&(leds[0]), NUM_LEDS, CRGB(color_pallete[light_color][0], color_pallete[light_color][1], color_pallete[light_color][2]));
-    //       FastLED.show();
-    //       break;
-    //     }
-
-    //     case emLights: {
-    //       fill_solid(&(leds[0]), NUM_LEDS, CRGB::White);
-    //       FastLED.show();
-    //       break;
-    //     } 
-        
-    //     case emPolice: {
-    //       idex++;
-    //       if (idex >= NUM_LEDS) {
-    //         idex = 0;
-    //       }
-    //       int idexR = idex;
-    //       int idexB = antipodal_index(idexR);
-    //       int thathue = (thishue + 160) % 255;
-    //       for (int i = 0; i < NUM_LEDS; i++ ) {
-    //         if (i == idexR) {
-    //           leds[i] = CHSV(thishue, thissat, 255);
-    //         }
-    //         else if (i == idexB) {
-    //           leds[i] = CHSV(thathue, thissat, 255);
-    //         }
-    //         else {
-    //           leds[i] = CHSV(0, 0, 0);
-    //         }
-    //       }
-    //       FastLED.show();
-    //       if (safeDelay(20)) return;
-    //       break;
-    //     }
-
-    //     case emPoliceAll: {
-    //       idex++;
-    //       if (idex >= NUM_LEDS) {
-    //         idex = 0;
-    //       }
-    //       int idexR = idex;
-    //       int idexB = antipodal_index(idexR);
-    //       int thathue = (thishue + 160) % 255;
-    //       leds[idexR] = CHSV(thishue, thissat, 255);
-    //       leds[idexB] = CHSV(thathue, thissat, 255);
-    //       FastLED.show();
-    //       if (safeDelay(20)) return;
-    //       break;
-    //     }
-        
-    //     case emRainbow: {
-    //       static uint8_t ihue;
-    //       ihue++;
-    //       if (ihue > 255) {
-    //         ihue = 0;
-    //       }
-    //       for (int idex = 0 ; idex < NUM_LEDS; idex++ ) {
-    //         leds[idex] = CHSV(ihue, thissat, 255);
-    //       }
-    //       FastLED.show();
-    //       if (safeDelay(10)) return;
-    //       break;
-    //     }
-    //   }
-    // }
+    
   }
 
   // Режим настроек
