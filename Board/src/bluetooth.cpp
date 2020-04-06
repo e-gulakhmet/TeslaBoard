@@ -17,7 +17,6 @@ void Bluetooth::update() {
 
     if (is_connect_) {
       sett_mode_ = static_cast<SettingMode>(bl_data_[0]);
-
       switch (sett_mode_) {
         case smMain: {
           motor_data_.mode = bl_data_[1];
@@ -39,6 +38,10 @@ void Bluetooth::update() {
 
             case 1: {
               light_data_.is_blink = bl_data_[4];
+              break;
+            }
+
+            case 2: {
               break;
             }
           }

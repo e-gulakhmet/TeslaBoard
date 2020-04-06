@@ -11,7 +11,16 @@ class Bluetooth {
         Bluetooth(uint8_t rx_pin, uint8_t tx_pin);
         void update();
         bool isConnect() {return is_connect_;}
-        uint8_t getMode();
+
+        uint8_t getMotorMode() {return motor_data_.mode;}
+        uint8_t getMotorPower() {return motor_data_.power;}
+
+        bool isLightOn() {return light_data_.is_on;}
+        uint8_t getLightBright() {return light_data_.bright;}
+        uint8_t getLightMode() {return light_data_.mode;}
+        uint8_t getLightColor() {return light_data_.color;}
+        bool isLightBlink() {return light_data_.is_blink;}
+
     
     private:
         uint8_t rx_pin_;

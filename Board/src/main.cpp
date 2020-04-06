@@ -2,35 +2,33 @@
 #include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
-#include <FastLED.h>
+//#include <FastLED.h>
 #include <SoftwareSerial.h>
 
 #include "motor.h"
 #include "main.h"
 #include "bluetooth.h"
+#include "light.h"
 
 RF24 radio(RADIO_CS_PIN, RADIO_CSN_PIN);
 Motor motor(MOTOR_PIN, TEMP_PIN);
-CRGB leds[NUM_LEDS];
-//SoftwareSerial btSerial(BL_RX, BL_TX);
+//CRGB leds[NUM_LEDS];
+Light leds(LEDS_PIN, NUM_LEDS);
 Bluetooth blt(BL_RX, BL_TX);
 
 LightsMode lights_mode = emOneColor;
 
 byte got_data[3];
 byte send_data[3];
-bool is_light = true;
+bool is_light;
 bool is_setting;
 unsigned long send_timer;
 unsigned long radio_timer;
 uint8_t idex;
 uint8_t thishue = 0;
 uint8_t thissat = 255;
-int bl_data[6];     // массив численных значений после парсинга
-boolean is_bluetooth;
-uint8_t color = 2;
-bool is_blink;
-bool is_all_leds;
+uint8_t light_color = 0;
+bool is_light_blink;
 
 
 
@@ -56,46 +54,12 @@ int antipodal_index(int i) {
 
 
 
-// void parsing() {
-//   static uint8_t index;
-//   static String string_convert = "";
-//   static boolean getStarted;
-//   if (btSerial.available() > 0) {
-//     char incomingByte = btSerial.read();        // обязательно ЧИТАЕМ входящий символ
-//     if (getStarted) {                         // если приняли начальный символ (парсинг разрешён)
-//       if (incomingByte != ' ' && incomingByte != ';') {   // если это не пробел И не конец
-//         string_convert += incomingByte;       // складываем в строку
-//       } else {                                // если это пробел или ; конец пакета
-//         bl_data[index] = string_convert.toInt();  // преобразуем строку в int и кладём в массив
-//         string_convert = "";                 // очищаем строку
-//         index++;                              // переходим к парсингу следующего элемента массива
-//       }
-//     }
-//     if (incomingByte == '$') {                // если это $
-//       getStarted = true;                      // поднимаем флаг, что можно парсить
-//       index = 0;                              // сбрасываем индекс
-//       string_convert = "";                    // очищаем строку
-//     }
-//     if (incomingByte == ';') {                // если таки приняли ; - конец парсинга
-//       getStarted = false;                     // сброс
-//       is_bluetooth = true;                    // флаг на принятие
-//     }
-//   }
-// }
-
-
-
 void setup() {
   Serial.begin(9600);
 
   pinMode(BUTT_PIN, INPUT_PULLUP);
 
-  FastLED.addLeds<WS2812B, LEDS_PIN, GRB>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
-  FastLED.setBrightness(100);
-  FastLED.clear();
-  FastLED.show();
-
-  //btSerial.begin(9600);
+  leds.begin();
   
   radio.begin(); //активировать модуль
   radio.setAutoAck(1);         //режим подтверждения приёма, 1 вкл 0 выкл
@@ -113,6 +77,7 @@ void setup() {
   radio.writeAckPayload(1, &send_data, sizeof(send_data));
 
   motor.begin();
+  motor.setPower(got_data[0]);
 
   if (digitalRead(A0) == 0) {
     is_setting = true;
@@ -122,13 +87,21 @@ void setup() {
 
 
 void loop() {
-  //parsing();
   blt.update();
+  leds.update();
+  motor.update();
+
+  leds.oneColor();
 
   if (!is_setting) {
-
     if(blt.isConnect()) {
+      motor.setMode(blt.getMotorMode());
+      motor.setPower(blt.getMotorPower());
 
+      is_light = blt.isLightOn();
+      lights_mode = static_cast<LightsMode>(blt.getLightMode());
+      light_color = blt.getLightColor();
+      is_light_blink = blt.isLightBlink();
     }
 
     else {
@@ -158,74 +131,74 @@ void loop() {
       }
     }
 
-    if (is_light) {
-      switch (lights_mode) {
-        case emOneColor: {
-          fill_solid(&(leds[0]), NUM_LEDS, CRGB(color_pallete[color][0], color_pallete[color][1], color_pallete[color][2]));
-          FastLED.show();
-          break;
-        }
+    // if (is_light) {
+    //   switch (lights_mode) {
+    //     case emOneColor: {
+    //       fill_solid(&(leds[0]), NUM_LEDS, CRGB(color_pallete[light_color][0], color_pallete[light_color][1], color_pallete[light_color][2]));
+    //       FastLED.show();
+    //       break;
+    //     }
 
-        case emLights: {
-          fill_solid(&(leds[0]), NUM_LEDS, CRGB::White);
-          FastLED.show();
-          break;
-        } 
+    //     case emLights: {
+    //       fill_solid(&(leds[0]), NUM_LEDS, CRGB::White);
+    //       FastLED.show();
+    //       break;
+    //     } 
         
-        case emPolice: {
-          idex++;
-          if (idex >= NUM_LEDS) {
-            idex = 0;
-          }
-          int idexR = idex;
-          int idexB = antipodal_index(idexR);
-          int thathue = (thishue + 160) % 255;
-          for (int i = 0; i < NUM_LEDS; i++ ) {
-            if (i == idexR) {
-              leds[i] = CHSV(thishue, thissat, 255);
-            }
-            else if (i == idexB) {
-              leds[i] = CHSV(thathue, thissat, 255);
-            }
-            else {
-              leds[i] = CHSV(0, 0, 0);
-            }
-          }
-          FastLED.show();
-          if (safeDelay(20)) return;
-          break;
-        }
+    //     case emPolice: {
+    //       idex++;
+    //       if (idex >= NUM_LEDS) {
+    //         idex = 0;
+    //       }
+    //       int idexR = idex;
+    //       int idexB = antipodal_index(idexR);
+    //       int thathue = (thishue + 160) % 255;
+    //       for (int i = 0; i < NUM_LEDS; i++ ) {
+    //         if (i == idexR) {
+    //           leds[i] = CHSV(thishue, thissat, 255);
+    //         }
+    //         else if (i == idexB) {
+    //           leds[i] = CHSV(thathue, thissat, 255);
+    //         }
+    //         else {
+    //           leds[i] = CHSV(0, 0, 0);
+    //         }
+    //       }
+    //       FastLED.show();
+    //       if (safeDelay(20)) return;
+    //       break;
+    //     }
 
-        case emPoliceAll: {
-          idex++;
-          if (idex >= NUM_LEDS) {
-            idex = 0;
-          }
-          int idexR = idex;
-          int idexB = antipodal_index(idexR);
-          int thathue = (thishue + 160) % 255;
-          leds[idexR] = CHSV(thishue, thissat, 255);
-          leds[idexB] = CHSV(thathue, thissat, 255);
-          FastLED.show();
-          if (safeDelay(20)) return;
-          break;
-        }
+    //     case emPoliceAll: {
+    //       idex++;
+    //       if (idex >= NUM_LEDS) {
+    //         idex = 0;
+    //       }
+    //       int idexR = idex;
+    //       int idexB = antipodal_index(idexR);
+    //       int thathue = (thishue + 160) % 255;
+    //       leds[idexR] = CHSV(thishue, thissat, 255);
+    //       leds[idexB] = CHSV(thathue, thissat, 255);
+    //       FastLED.show();
+    //       if (safeDelay(20)) return;
+    //       break;
+    //     }
         
-        case emRainbow: {
-          static uint8_t ihue;
-          ihue++;
-          if (ihue > 255) {
-            ihue = 0;
-          }
-          for (int idex = 0 ; idex < NUM_LEDS; idex++ ) {
-            leds[idex] = CHSV(ihue, thissat, 255);
-          }
-          FastLED.show();
-          if (safeDelay(10)) return;
-          break;
-        }
-      }
-    }
+    //     case emRainbow: {
+    //       static uint8_t ihue;
+    //       ihue++;
+    //       if (ihue > 255) {
+    //         ihue = 0;
+    //       }
+    //       for (int idex = 0 ; idex < NUM_LEDS; idex++ ) {
+    //         leds[idex] = CHSV(ihue, thissat, 255);
+    //       }
+    //       FastLED.show();
+    //       if (safeDelay(10)) return;
+    //       break;
+    //     }
+    //   }
+    // }
   }
 
   // Режим настроек
@@ -236,6 +209,4 @@ void loop() {
     else
       motor.setPower(0);
   }
-
-  motor.update();
 }
