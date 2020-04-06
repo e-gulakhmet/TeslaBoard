@@ -91,7 +91,7 @@ void loop() {
   leds.update();
   motor.update();
 
-  leds.oneColor();
+  leds.rainbow();
 
   if (!is_setting) {
     if(blt.isConnect()) {

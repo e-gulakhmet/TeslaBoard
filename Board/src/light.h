@@ -12,6 +12,10 @@ class Light {
         void begin();
         void update();
         void oneColor() {setEffectMode(emOneColor);}
+        void lights() {setEffectMode(emLights);}
+        void police() {setEffectMode(emPolice);}
+        void policeAll() {setEffectMode(emPoliceAll);}
+        void rainbow() {setEffectMode(emRainbow);}
 
         typedef enum {
             esFreeze,
@@ -33,7 +37,11 @@ class Light {
         uint8_t num_leds_;
         uint8_t brightness_;
         uint8_t color_;
+        uint8_t idex_;
         bool is_updated;
+        uint8_t idex;
+        uint8_t thishue;
+        uint8_t thissat;
 
         EffectMode mode_;
         EffectSpeed speed_;
@@ -41,6 +49,8 @@ class Light {
         Adafruit_NeoPixel leds_;
 
         void setEffectMode(EffectMode mode);
+        bool safeDelay(int del_time);
+        int antipodal_index(int i);
 };
 
 
