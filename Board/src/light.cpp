@@ -49,7 +49,7 @@ void Light::update() {
                     static bool show;
                     static unsigned long timer;
 
-                    if (millis() - timer < 1000)
+                    if (millis() - timer < 300)
                         return;
                     
                     timer = millis();
