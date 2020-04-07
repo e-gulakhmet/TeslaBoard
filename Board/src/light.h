@@ -26,6 +26,7 @@ class Light {
         void setBrightness(uint8_t bright); // Установка яркости
         void setEffectColor(uint8_t index); // Установка цвета для режимов(oneColor)
         void setLightsBlink(bool state); // Моргает ли лампочка в режимах(Lights)
+        void setEffectSpeed(int speed); // Установка скорости эффектов
         uint8_t getEffectIndex() {return static_cast<int>(mode_);} // Получения индекса режима подсветки
         uint8_t getBrightness() {return leds_.getBrightness();} // Получение яркости
         uint8_t getEffectColor() {return color_index_;}; // Получение цвета режимов
@@ -35,11 +36,11 @@ class Light {
         uint8_t data_pin_;
         uint8_t num_leds_;
         bool is_on;
+        bool is_updated;
+        bool is_pulse;
         uint8_t brightness_;
         uint8_t color_index_;
         int speed_;
-        bool is_updated;
-        bool is_pulse;
         uint8_t idex_;
         uint8_t idex;
         uint8_t thishue;

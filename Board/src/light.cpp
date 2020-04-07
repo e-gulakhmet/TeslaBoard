@@ -7,7 +7,7 @@ Light::Light(uint8_t data_pin, uint8_t num_leds)
     , num_leds_(num_leds)
     , brightness_(50)
     , color_index_(0)
-    , speed_(0)
+    , speed_(20)
     , is_updated(false)
     , thishue(0)
     , thissat(255)
@@ -49,7 +49,7 @@ void Light::update() {
                 }
                 if (is_pulse) { // Если режим мигания включен
                     is_updated = true;
-                    if (safeDelay(300))
+                    if (safeDelay(speed_))
                         return;
 
                     static bool show;
@@ -76,7 +76,7 @@ void Light::update() {
             }
             
             case emPolice: {
-                if (safeDelay(20)) 
+                if (safeDelay(speed_)) 
                     return;
 
                 idex_++;
@@ -101,7 +101,7 @@ void Light::update() {
             }
             
             case emPoliceAll: {
-                if (safeDelay(20)) 
+                if (safeDelay(speed_)) 
                     return;
 
                 idex++;
@@ -117,7 +117,7 @@ void Light::update() {
             }
             
             case emRainbow: {
-                if (safeDelay(10))
+                if (safeDelay(speed_))
                     return;
 
                 static uint16_t ihue = 0;
@@ -202,6 +202,15 @@ void Light::setLightsBlink(bool state) {
     
     is_pulse = state;
     is_updated = false;
+}
+
+
+
+void Light::setEffectSpeed(int speed) {
+    if (speed_ == speed)
+        return;
+    
+    speed_ = speed;
 }
 
 

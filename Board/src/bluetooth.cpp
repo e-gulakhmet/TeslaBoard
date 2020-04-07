@@ -42,6 +42,7 @@ void Bluetooth::update() {
             }
 
             case 2: {
+              light_data_.speed = bl_data_[4];
               break;
             }
           }

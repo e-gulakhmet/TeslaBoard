@@ -20,6 +20,7 @@ class Bluetooth {
         uint8_t getLightMode() {return light_data_.mode;}
         uint8_t getLightColor() {return light_data_.color;}
         bool isLightBlink() {return light_data_.is_blink;}
+        int getLightSpeed() {return light_data_.speed;}
 
     
     private:
@@ -44,6 +45,7 @@ class Bluetooth {
             uint8_t bright;
             uint8_t color;
             bool is_blink;
+            int speed;
         } LightData;
 
         SettingMode sett_mode_;

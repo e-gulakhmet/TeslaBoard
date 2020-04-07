@@ -25,7 +25,7 @@ unsigned long radio_timer;
 
 // TODO: Закончить настройку каждого из эффектов
 // TODO: Сделать настойку режимов мотора
-// TODO: Настройка максмальной температуры мотора мотор
+// TODO: Настройка максмальной температуры мотора
 // TODO: Добавить сохранение данных в EEPROM
 
 
@@ -77,6 +77,7 @@ void loop() {
       light.setEffectByIndex(blt.getLightMode());
       light.setEffectColor(blt.getLightColor());
       light.setLightsBlink(blt.isLightBlink());
+      light.setEffectSpeed(blt.getLightSpeed());
     }
 
     else {
