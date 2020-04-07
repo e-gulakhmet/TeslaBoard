@@ -31,14 +31,5 @@ uint8_t color_pallete[13][3] = {
 };
 
 
-typedef enum { // Режимы подсветки
-    emOneColor = 0, // Один цвет
-    emLights, // Фары
-    emPolice, // Мигалка(два светодиода)
-    emPoliceAll, // Мигалка(все светодиоды)
-    emRainbow, // Радуга
-} LightsMode;
-
-
 
 #endif // _MAIN_H_

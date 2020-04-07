@@ -9,34 +9,35 @@
 class Light {
     public:
         Light(uint8_t data_pin, uint8_t num_leds);
-        void begin();
-        void update();
-        void oneColor() {setEffectMode(emOneColor);}
-        void lights() {setEffectMode(emLights);}
-        void police() {setEffectMode(emPolice);}
-        void policeAll() {setEffectMode(emPoliceAll);}
-        void rainbow() {setEffectMode(emRainbow);}
 
         typedef enum {
-            esFreeze,
-            esSlow,
-            esNormal,
-            esFast
-        } EffectSpeed;
-
-        typedef enum {
+            emOff = -1,
             emOneColor = 0, // Один цвет
             emLights, // Фары
             emPolice, // Мигалка(два светодиода)
             emPoliceAll, // Мигалка(все светодиоды)
             emRainbow, // Радуга
         } EffectMode;
+
+        void begin();
+        void update();
+        void setOn(bool state);
+        void setEffectByIndex(uint8_t index);
+        void setEffect(EffectMode mode);
+        void setBrightness(uint8_t bright);
+        void setEffectColor(uint8_t index);
+        uint8_t getEffectIndex() {return static_cast<int>(mode_);}
+        uint8_t getBrightness() {return leds_.getBrightness();}
+        uint8_t getEffectColor() {return color_index_;};
+        int getEffectSpeed() {return speed_;}
     
     private:
         uint8_t data_pin_;
         uint8_t num_leds_;
+        bool is_on;
         uint8_t brightness_;
-        uint8_t color_;
+        uint8_t color_index_;
+        int speed_;
         uint8_t idex_;
         bool is_updated;
         uint8_t idex;
@@ -44,11 +45,9 @@ class Light {
         uint8_t thissat;
 
         EffectMode mode_;
-        EffectSpeed speed_;
-
+        
         Adafruit_NeoPixel leds_;
 
-        void setEffectMode(EffectMode mode);
         bool safeDelay(int del_time);
         int antipodal_index(int i);
 };

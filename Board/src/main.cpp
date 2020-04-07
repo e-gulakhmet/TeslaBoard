@@ -11,44 +11,15 @@
 
 RF24 radio(RADIO_CS_PIN, RADIO_CSN_PIN);
 Motor motor(MOTOR_PIN, TEMP_PIN);
-Light leds(LEDS_PIN, NUM_LEDS);
+Light light(LEDS_PIN, NUM_LEDS);
 Bluetooth blt(BL_RX, BL_TX);
-
-LightsMode lights_mode = emOneColor;
 
 byte got_data[3];
 byte send_data[3];
-bool is_light;
+
 bool is_setting;
 unsigned long send_timer;
 unsigned long radio_timer;
-uint8_t idex;
-uint8_t thishue = 0;
-uint8_t thissat = 255;
-uint8_t light_color = 0;
-bool is_light_blink;
-
-
-
-boolean safeDelay(int del_time) {
-  static bool change_flag;
-  uint32_t this_time = millis();
-  while (millis() - this_time <= del_time) {
-    if (change_flag) {
-      change_flag = false;
-      return true;
-    }
-  }
-  return false;
-}
-
-int antipodal_index(int i) {
-  int iN = i + NUM_LEDS / 2;
-  if (i >= NUM_LEDS / 2) {
-    iN = (i + NUM_LEDS / 2) % NUM_LEDS;
-  }
-  return iN;
-}
 
 
 
@@ -57,7 +28,7 @@ void setup() {
 
   pinMode(BUTT_PIN, INPUT_PULLUP);
 
-  leds.begin();
+  light.begin();
   
   radio.begin(); //активировать модуль
   radio.setAutoAck(1);         //режим подтверждения приёма, 1 вкл 0 выкл
@@ -86,20 +57,18 @@ void setup() {
 
 void loop() {
   blt.update();
-  leds.update();
+  light.update();
   motor.update();
-
-  leds.rainbow();
 
   if (!is_setting) {
     if(blt.isConnect()) {
       motor.setMode(blt.getMotorMode());
       motor.setPower(blt.getMotorPower());
 
-      is_light = blt.isLightOn();
-      lights_mode = static_cast<LightsMode>(blt.getLightMode());
-      light_color = blt.getLightColor();
-      is_light_blink = blt.isLightBlink();
+      light.setOn(blt.isLightOn());
+      light.setBrightness(blt.getLightBright());
+      light.setEffectByIndex(blt.getLightMode());
+      light.setEffectColor(blt.getLightColor());
     }
 
     else {
@@ -115,7 +84,7 @@ void loop() {
 
         motor.setPower(got_data[0]);  // Данные о положение потенциометра
         motor.setMode(got_data[1]); // Данные о выбранном режиме
-        is_light = got_data[2];
+        light.setOn(got_data[2]);
 
         send_data[0] = 20; // Отправляем данные о заряде
         send_data[1] = motor.getTemp(); // Отправляем данные о температуре
@@ -127,9 +96,7 @@ void loop() {
         motor.setPower(0);
         radio_timer = millis();
       }
-    }
-
-    
+    } 
   }
 
   // Режим настроек
