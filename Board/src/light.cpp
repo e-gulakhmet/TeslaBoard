@@ -29,10 +29,11 @@ void Light::begin() {
 
 
 void Light::update() {
-    if (is_on) {
+    if (is_on) { // Если подсветка включена
         switch (mode_) {
-            case emOneColor: {
-                if (!is_updated) {
+            case emOneColor: { 
+                if (!is_updated) { // Если уже показали цвет на ленте
+                    // Не обновляем ее, чтобы не грузить ардуинку
                     leds_.fill(color_pallete_[color_index_], 0, num_leds_);
                     leds_.show();
                     is_updated = true;
@@ -41,20 +42,21 @@ void Light::update() {
             }
             
             case emLights: {
+                // По бокам и спереди огни всегда горят
                 if (!is_updated) {
                     leds_.fill(leds_.Color(255, 255, 255), 0, num_leds_ - 6);
-                    is_updated = true;
-                }
-                if (is_pulse) {
-                    static bool show;
-                    static unsigned long timer;
 
-                    if (millis() - timer < 300)
+                }
+                if (is_pulse) { // Если режим мигания включен
+                    is_updated = true;
+                    if (safeDelay(300))
                         return;
+
+                    static bool show;
                     
-                    timer = millis();
                     show = !show;
 
+                    //  Моргаем задними лампами
                     if (show) {
                         leds_.fill(leds_.Color(255,0, 0), num_leds_ - 6, 6);
                     }
@@ -63,8 +65,8 @@ void Light::update() {
                     }
                     leds_.show();
                 }
-                else {
-                    if (!is_updated) {
+                else { // Если режим мигания выключен
+                    if (!is_updated) { // Просто включаем задние диоды
                         leds_.fill(leds_.Color(255, 0, 0), num_leds_ - 6, 6);
                         leds_.show();
                         is_updated = true;
@@ -74,6 +76,9 @@ void Light::update() {
             }
             
             case emPolice: {
+                if (safeDelay(20)) 
+                    return;
+
                 idex_++;
                 if (idex_ >= num_leds_) {
                     idex_ = 0;
@@ -92,11 +97,13 @@ void Light::update() {
                     }
                 }
                 leds_.show();
-                if (safeDelay(20)) return;
                 break;
             }
             
             case emPoliceAll: {
+                if (safeDelay(20)) 
+                    return;
+
                 idex++;
                 if (idex >= num_leds_) {
                     idex = 0;
@@ -106,12 +113,15 @@ void Light::update() {
                 leds_.setPixelColor(idexR, leds_.Color(255, 0, 0));
                 leds_.setPixelColor(idexB, leds_.Color(0, 0, 255));
                 leds_.show();
-                if (safeDelay(20)) return;
                 break;
             }
             
             case emRainbow: {
+                if (safeDelay(10))
+                    return;
+
                 static uint16_t ihue = 0;
+                
                 ihue += 500;
                 if (ihue > 65536) {
                     ihue = 0;
@@ -120,7 +130,6 @@ void Light::update() {
                     leds_.setPixelColor(idex, leds_.ColorHSV(ihue, thissat, 100));
                 }
                 leds_.show();
-                if (safeDelay(30)) return;
                 break;
             }
         }
@@ -139,7 +148,7 @@ void Light::update() {
 void Light::setOn(bool state) {
     if (is_on != state) {
         is_on = state;
-        is_updated = false;
+        is_updated = false; // Говорим, что нужно обновить ленту
     }
 
 }
@@ -187,7 +196,7 @@ void Light::setEffectColor(uint8_t index) {
 
 
 
-void Light::setLightsPulse(bool state) {
+void Light::setLightsBlink(bool state) {
     if (is_pulse == state)
         return;
     
@@ -198,15 +207,12 @@ void Light::setLightsPulse(bool state) {
 
 
 bool Light::safeDelay(int del_time) {
-    static bool change_flag;
-    unsigned long this_time = millis();
-    while (millis() - this_time <= del_time) {
-        if (change_flag) {
-        change_flag = false;
+    static unsigned long timer;
+    if (millis() - timer <= del_time)
         return true;
-        }
-    }
+
     return false;
+    timer = millis();
 }
 
 int Light::antipodal_index(int i) {

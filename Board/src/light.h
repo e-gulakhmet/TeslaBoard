@@ -18,18 +18,18 @@ class Light {
             emRainbow, // Радуга
         } EffectMode;
 
-        void begin();
-        void update();
-        void setOn(bool state);
-        void setEffectByIndex(uint8_t index);
-        void setEffect(EffectMode mode);
-        void setBrightness(uint8_t bright);
-        void setEffectColor(uint8_t index);
-        void setLightsPulse(bool state);
-        uint8_t getEffectIndex() {return static_cast<int>(mode_);}
-        uint8_t getBrightness() {return leds_.getBrightness();}
-        uint8_t getEffectColor() {return color_index_;};
-        int getEffectSpeed() {return speed_;}
+        void begin(); // Инициализация
+        void update(); // Функция в которой происходит обработка всех действий
+        void setOn(bool state); // Включение или выключение подсветки
+        void setEffectByIndex(uint8_t index); // Установка режима подсветки по индексу
+        void setEffect(EffectMode mode); // Установка режима подсветки
+        void setBrightness(uint8_t bright); // Установка яркости
+        void setEffectColor(uint8_t index); // Установка цвета для режимов(oneColor)
+        void setLightsBlink(bool state); // Моргает ли лампочка в режимах(Lights)
+        uint8_t getEffectIndex() {return static_cast<int>(mode_);} // Получения индекса режима подсветки
+        uint8_t getBrightness() {return leds_.getBrightness();} // Получение яркости
+        uint8_t getEffectColor() {return color_index_;}; // Получение цвета режимов
+        int getEffectSpeed() {return speed_;} // Получение значение скорости эффектов
     
     private:
         uint8_t data_pin_;
@@ -62,10 +62,7 @@ class Light {
         };
 
         EffectMode mode_;
-        
         Adafruit_NeoPixel leds_;
-
-
 
         bool safeDelay(int del_time);
         int antipodal_index(int i);
