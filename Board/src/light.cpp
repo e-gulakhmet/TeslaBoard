@@ -31,18 +31,9 @@ void Light::begin() {
 void Light::update() {
     if (is_on) {
         switch (mode_) {
-            case emOff: {
-                if (!is_updated) {
-                    leds_.fill(leds_.Color(0, 0, 0), 0, num_leds_);
-                    leds_.show();
-                    is_updated = true;
-                }
-                break;
-            }
-
             case emOneColor: {
                 if (!is_updated) {
-                    leds_.fill(255, 0, num_leds_);
+                    leds_.fill(color_pallete_[color_index_], 0, num_leds_);
                     leds_.show();
                     is_updated = true;
                 }
@@ -51,9 +42,33 @@ void Light::update() {
             
             case emLights: {
                 if (!is_updated) {
-                    leds_.fill(leds_.Color(255, 255, 255), 0, num_leds_);
-                    leds_.show();
+                    leds_.fill(leds_.Color(255, 255, 255), 0, num_leds_ - 6);
                     is_updated = true;
+                }
+                if (is_pulse) {
+                    static bool show;
+                    static unsigned long timer;
+
+                    if (millis() - timer < 1000)
+                        return;
+                    
+                    timer = millis();
+                    show = !show;
+
+                    if (show) {
+                        leds_.fill(leds_.Color(255,0, 0), num_leds_ - 6, 6);
+                    }
+                    else {
+                        leds_.fill(leds_.Color(0, 0, 0), num_leds_ - 6, 6);
+                    }
+                    leds_.show();
+                }
+                else {
+                    if (!is_updated) {
+                        leds_.fill(leds_.Color(255, 0, 0), num_leds_ - 6, 6);
+                        leds_.show();
+                        is_updated = true;
+                    }
                 }
                 break;
             }
@@ -170,6 +185,15 @@ void Light::setEffectColor(uint8_t index) {
     is_updated = false;
 }
 
+
+
+void Light::setLightsPulse(bool state) {
+    if (is_pulse == state)
+        return;
+    
+    is_pulse = state;
+    is_updated = false;
+}
 
 
 

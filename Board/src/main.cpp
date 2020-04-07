@@ -69,6 +69,7 @@ void loop() {
       light.setBrightness(blt.getLightBright());
       light.setEffectByIndex(blt.getLightMode());
       light.setEffectColor(blt.getLightColor());
+      light.setLightsPulse(blt.isLightBlink());
     }
 
     else {
