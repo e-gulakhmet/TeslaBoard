@@ -29,34 +29,46 @@ unsigned long radio_timer;
 // TODO: Сделать настойку режимов мотора
 // TODO: Настройка максмальной температуры мотора
 // TODO: Добавить сохранение данных в EEPROM
+// TODO: Изменить управление скейтом так, чтобы мы могли использовать один общий массив
 
 
 
-void parsing() {
-    static uint8_t index;
-    static String string_convert = "";
-    static boolean getStarted;
-    if (blSerial.available() > 0) {
-        char incomingByte = blSerial.read();        // обязательно ЧИТАЕМ входящий символ
-        if (getStarted) {                         // если приняли начальный символ (парсинг разрешён)
-        if (incomingByte != ' ' && incomingByte != ';') {   // если это не пробел И не конец
-            string_convert += incomingByte;       // складываем в строку
-        } else {                                // если это пробел или ; конец пакета
-            bl_data[index] = string_convert.toInt();  // преобразуем строку в int и кладём в массив
-            string_convert = "";                 // очищаем строку
-            index++;                              // переходим к парсингу следующего элемента массива
-        }
-        }
-        if (incomingByte == '$') {                // если это $
-        getStarted = true;                      // поднимаем флаг, что можно парсить
-        index = 0;                              // сбрасываем индекс
-        string_convert = "";                    // очищаем строку
-        }
-        if (incomingByte == ';') {                // если таки приняли ; - конец парсинга
-        getStarted = false;                     // сброс
-        is_connect = true;                    // флаг на принятие
-        }
+void parse() {
+  // Если данные приходят от блютуза или радио-передатчика то is_connect = true
+  // Если данные не приходять в течении 5 секунд и is_connect = true, то is_connect = false;
+  // Если is_connect = false, но данные пришли, то сбрасываем таймер и говорим, что is_connect = true;
+  // Сбрасываем таймер при каждом получении данных
+  // if(данные от блютуза)
+  // else if (данные от радио-передатчика)
+  // else: Ждем 5 секунд и говорим что is_connect = false
+  
+  // TODO: Сохраняем все данные в один общий массив
+  
+  static uint8_t index;
+  String string_convert = "";
+  static boolean getStarted;
+  if (blSerial.available() > 0) {
+    char incomingByte = blSerial.read(); // обязательно ЧИТАЕМ входящий символ
+    if (getStarted) { // если приняли начальный символ (парсинг разрешён)
+      if (incomingByte != ' ' && incomingByte != ';') { // если это не пробел И не конец
+        string_convert += incomingByte; // складываем в строку
+      }
+      else { // если это пробел или ; конец пакета
+        bl_data[index] = string_convert.toInt(); // преобразуем строку в int и кладём в массив
+        string_convert = ""; // очищаем строку
+        index++; // переходим к парсингу следующего элемента массива
+      }
     }
+    if (incomingByte == '$') { // если это $
+      getStarted = true; // поднимаем флаг, что можно парсить
+      index = 0; // сбрасываем индекс
+      string_convert = ""; // очищаем строку
+    }
+    if (incomingByte == ';') { // если таки приняли ; - конец парсинга
+      getStarted = false; // сброс
+      is_connect = true; // флаг на принятие
+    }
+  }
 }
 
 
@@ -96,7 +108,7 @@ void setup() {
 
 
 void loop() {
-  parsing();
+  parse();
   light.update();
   motor.update();
 
@@ -137,20 +149,6 @@ void loop() {
       }
     }
 
-    // if(blt.isConnect()) {
-    //   motor.setMode(blt.getMotorMode());
-    //   motor.setPower(blt.getMotorPower());
-
-
-
-    //   light.setOn(blt.isLightOn());
-    //   light.setBrightness(blt.getLightBright());
-    //   light.setEffectByIndex(blt.getLightMode());
-    //   light.setEffectColor(blt.getLightColor());
-    //   light.setLightsBlink(blt.isLightBlink());
-    //   light.setEffectSpeed(blt.getLightSpeed());
-    // }
-
     else {
       byte pipeNo;
       if (radio.available(&pipeNo)) { // слушаем эфир со всех труб
@@ -170,7 +168,7 @@ void loop() {
         send_data[1] = motor.getTemp(); // Отправляем данные о температуре
       }
 
-      if (millis() - radio_timer > 5000) { // Если данные от пульта не поступали больше 5 сикунд
+      if (millis() - radio_timer > 5000) { // Если данные от пульта не поступали больше 5 секунд
         // Выключаем мотор
         motor.setMode(Motor::mOff);
         motor.setPower(0);
