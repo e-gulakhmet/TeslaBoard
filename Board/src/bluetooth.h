@@ -37,6 +37,13 @@ class Bluetooth {
         typedef struct {
             uint8_t power;
             uint8_t mode;
+            uint8_t max_temp_;
+            uint8_t eco_delay_;
+            uint16_t eco_max_power_;
+            uint8_t normal_delay_;
+            uint16_t normal_max_power_;
+            uint8_t sport_delay_;
+            uint16_t sport_max_power_;
         } MotorData;
 
         typedef struct {

@@ -5,6 +5,8 @@ Motor::Motor(uint8_t motor_pin, uint8_t temp_pin)
     : motor_pin_(motor_pin)
     , temp_pin_(temp_pin)
     , power_(0)
+    , temp_(0)
+    , max_temp_(60)
     , motor_delay_(0)
     , mode_(mComfort)
     , oneWire_(temp_pin_)
@@ -34,12 +36,12 @@ void Motor::update() {
         temp_ = sensor_.getTempCByIndex(0);
     }
     
-    if (temp_ <= 60) { // Если температура меньше 60 градусов
+    if (temp_ <= max_temp_) { // Если температура меньше 60 градусов
         // Управляем мотором
-        if (int(power_ - value) > int(motor_spec_[mode_][0])) {
-            if (millis() - motor_delay_ > motor_spec_[mode_][1]) {
+        if (int(power_ - value) > int(motor_spec_[mode_].change)) {
+            if (millis() - motor_delay_ > motor_spec_[mode_].delay) {
                 motor_delay_ = millis();
-                value += motor_spec_[mode_][0];
+                value += motor_spec_[mode_].change;
             }
         }
         else {
@@ -50,7 +52,7 @@ void Motor::update() {
         value = 0;
     }
 
-    motor_.writeMicroseconds(map(value, 0, 255, 800, motor_spec_[mode_][2]));
+    motor_.writeMicroseconds(map(value, 0, 255, 800, motor_spec_[mode_].max_power));
 }
 
 
@@ -59,6 +61,7 @@ void Motor::setPower(uint8_t value) {
     if (power_ == value)
         return;
     
+    power_ = constrain(power_, 0, 255);
     power_ = value;
 }
 
@@ -86,4 +89,16 @@ void Motor::switchMode(bool clockwise) { // Переключение режим�
 
         mode_ = static_cast<Mode>(n);        
     }
+}
+
+
+
+void Motor::setMaxTemp(uint8_t max_temp) {
+    if (max_temp_ == max_temp)
+        return;
+
+    if (max_temp <= 80)
+        max_temp_ = max_temp;
+    else
+        max_temp_ = 80;
 }

@@ -13,9 +13,9 @@ const uint8_t TEMP_PIN = A3; // Пин датчика температуры
 const uint8_t BL_RX = 6;
 const uint8_t BL_TX = 7;
 
-
-
-
-
+typedef enum {
+    smMain = 0,
+    smLight
+} SettingMode;
 
 #endif // _MAIN_H_

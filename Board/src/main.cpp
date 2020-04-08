@@ -6,16 +6,19 @@
 
 #include "motor.h"
 #include "main.h"
-#include "bluetooth.h"
 #include "light.h"
 
 RF24 radio(RADIO_CS_PIN, RADIO_CSN_PIN);
+SoftwareSerial blSerial(BL_RX, BL_TX);
 Motor motor(MOTOR_PIN, TEMP_PIN);
 Light light(LEDS_PIN, NUM_LEDS);
-Bluetooth blt(BL_RX, BL_TX);
+
+SettingMode sett_mode;
 
 byte got_data[3];
 byte send_data[3];
+int bl_data[6];
+bool is_connect;
 
 bool is_setting;
 unsigned long send_timer;
@@ -29,12 +32,43 @@ unsigned long radio_timer;
 
 
 
+void parsing() {
+    static uint8_t index;
+    static String string_convert = "";
+    static boolean getStarted;
+    if (blSerial.available() > 0) {
+        char incomingByte = blSerial.read();        // обязательно ЧИТАЕМ входящий символ
+        if (getStarted) {                         // если приняли начальный символ (парсинг разрешён)
+        if (incomingByte != ' ' && incomingByte != ';') {   // если это не пробел И не конец
+            string_convert += incomingByte;       // складываем в строку
+        } else {                                // если это пробел или ; конец пакета
+            bl_data[index] = string_convert.toInt();  // преобразуем строку в int и кладём в массив
+            string_convert = "";                 // очищаем строку
+            index++;                              // переходим к парсингу следующего элемента массива
+        }
+        }
+        if (incomingByte == '$') {                // если это $
+        getStarted = true;                      // поднимаем флаг, что можно парсить
+        index = 0;                              // сбрасываем индекс
+        string_convert = "";                    // очищаем строку
+        }
+        if (incomingByte == ';') {                // если таки приняли ; - конец парсинга
+        getStarted = false;                     // сброс
+        is_connect = true;                    // флаг на принятие
+        }
+    }
+}
+
+
+
 void setup() {
   Serial.begin(9600);
 
   pinMode(BUTT_PIN, INPUT_PULLUP);
 
   light.begin();
+
+  blSerial.begin(9600);
   
   radio.begin(); //активировать модуль
   radio.setAutoAck(1);         //режим подтверждения приёма, 1 вкл 0 выкл
@@ -62,22 +96,60 @@ void setup() {
 
 
 void loop() {
-  blt.update();
+  parsing();
   light.update();
   motor.update();
 
   if (!is_setting) {
-    if(blt.isConnect()) {
-      motor.setMode(blt.getMotorMode());
-      motor.setPower(blt.getMotorPower());
+    if (is_connect) {
+      sett_mode = static_cast<SettingMode>(bl_data[0]);
+      switch (sett_mode) {
+        case smMain: {
+          motor.setMode(bl_data[1]);
+          int value = map(bl_data[2], 20, 480, 0, 255);
+          value = constrain(value, 0, 255);
+          motor.setPower(value);
+          break;
+        }
+        
+        case smLight: {
+          light.setOn(bl_data[1]);
+          light.setEffectByIndex(bl_data[2]);
+          light.setBrightness(bl_data[3]);
+          switch (light.getEffectIndex()) {
+            case 0: {
+              light.setEffectColor(bl_data[4]);
+              break;
+            }
 
-      light.setOn(blt.isLightOn());
-      light.setBrightness(blt.getLightBright());
-      light.setEffectByIndex(blt.getLightMode());
-      light.setEffectColor(blt.getLightColor());
-      light.setLightsBlink(blt.isLightBlink());
-      light.setEffectSpeed(blt.getLightSpeed());
+            case 1: {
+              light.setLightsBlink(4);
+              break;
+            }
+
+            case 2: {
+              light.setEffectSpeed(bl_data[4]);
+              break;
+            }
+          }
+          break;
+        }
+      }
     }
+
+    // if(blt.isConnect()) {
+    //   motor.setMode(blt.getMotorMode());
+    //   motor.setPower(blt.getMotorPower());
+
+
+
+    //   light.setOn(blt.isLightOn());
+    //   light.setBrightness(blt.getLightBright());
+    //   light.setEffectByIndex(blt.getLightMode());
+    //   light.setEffectColor(blt.getLightColor());
+    //   light.setLightsBlink(blt.isLightBlink());
+    //   light.setEffectSpeed(blt.getLightSpeed());
+    // }
 
     else {
       byte pipeNo;
