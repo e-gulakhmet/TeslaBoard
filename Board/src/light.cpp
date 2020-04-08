@@ -211,17 +211,18 @@ void Light::setEffectSpeed(int speed) {
         return;
     
     speed_ = speed;
+    timer = millis();
 }
 
 
 
 bool Light::safeDelay(int del_time) {
-    static unsigned long timer;
-    if (millis() - timer <= del_time)
+    if (millis() - timer < del_time)
         return true;
 
-    return false;
     timer = millis();
+    return false;
+
 }
 
 int Light::antipodal_index(int i) {

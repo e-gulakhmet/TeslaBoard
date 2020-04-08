@@ -41,6 +41,7 @@ class Light {
         uint8_t brightness_;
         uint8_t color_index_;
         int speed_;
+        unsigned long timer;
         uint8_t idex_;
         uint8_t idex;
         uint8_t thishue;
