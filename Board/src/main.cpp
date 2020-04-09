@@ -15,14 +15,14 @@ Light light(LEDS_PIN, NUM_LEDS);
 
 SettingMode sett_mode;
 
-byte got_data[3];
+int got_data[6];
 byte send_data[3];
 int bl_data[6];
 bool is_connect;
 
 bool is_setting;
 unsigned long send_timer;
-unsigned long radio_timer;
+unsigned long connect_timer;
 
 
 
@@ -41,20 +41,22 @@ void parse() {
   // if(данные от блютуза)
   // else if (данные от радио-передатчика)
   // else: Ждем 5 секунд и говорим что is_connect = false
-  
-  // TODO: Сохраняем все данные в один общий массив
-  
+
+  byte pipeNo;
   static uint8_t index;
   String string_convert = "";
   static boolean getStarted;
+
+
   if (blSerial.available() > 0) {
+    Serial.println("bluetooth_connected");
     char incomingByte = blSerial.read(); // обязательно ЧИТАЕМ входящий символ
     if (getStarted) { // если приняли начальный символ (парсинг разрешён)
       if (incomingByte != ' ' && incomingByte != ';') { // если это не пробел И не конец
         string_convert += incomingByte; // складываем в строку
       }
       else { // если это пробел или ; конец пакета
-        bl_data[index] = string_convert.toInt(); // преобразуем строку в int и кладём в массив
+        got_data[index] = string_convert.toInt(); // преобразуем строку в int и кладём в массив
         string_convert = ""; // очищаем строку
         index++; // переходим к парсингу следующего элемента массива
       }
@@ -67,6 +69,25 @@ void parse() {
     if (incomingByte == ';') { // если таки приняли ; - конец парсинга
       getStarted = false; // сброс
       is_connect = true; // флаг на принятие
+      connect_timer = millis(); 
+    }
+  }
+
+  else if (radio.available(&pipeNo)) { // слушаем эфир со всех труб
+    Serial.println("radio_connected");
+    radio.read(&got_data, sizeof(got_data)); // читаем входящий сигнал
+    if (millis() - send_timer > 2000) { // Отправляем данные обратно каждые 2 секунды
+      radio.writeAckPayload(1, &send_data, sizeof(send_data));
+      send_timer = millis();
+    }
+    connect_timer = millis();
+    is_connect = true;
+  }
+  
+  else{
+    if (is_connect && millis() - connect_timer > 5000){
+      is_connect = false;
+      Serial.println("no_connection");
     }
   }
 }
@@ -98,7 +119,6 @@ void setup() {
   radio.writeAckPayload(1, &send_data, sizeof(send_data));
 
   motor.begin();
-  motor.setPower(got_data[0]);
 
   if (digitalRead(A0) == 0) {
     is_setting = true;
@@ -114,23 +134,33 @@ void loop() {
 
   if (!is_setting) {
     if (is_connect) {
-      sett_mode = static_cast<SettingMode>(bl_data[0]);
+
+      send_data[0] = 20; // Отправляем данные о заряде
+      send_data[1] = motor.getTemp(); // Отправляем данные о температуре
+
+      Serial.print(got_data[0]); Serial.print("   ");
+      Serial.print(got_data[1]); Serial.print("   ");
+      Serial.print(got_data[2]); Serial.print("   ");
+      Serial.print(got_data[3]); Serial.print("   ");
+      Serial.println(got_data[4]);
+
+      sett_mode = static_cast<SettingMode>(got_data[0]);
       switch (sett_mode) {
         case smMain: {
-          motor.setMode(bl_data[1]);
-          int value = map(bl_data[2], 20, 480, 0, 255);
+          motor.setMode(got_data[1]);
+          int value = map(got_data[2], 20, 480, 0, 255);
           value = constrain(value, 0, 255);
           motor.setPower(value);
           break;
         }
         
         case smLight: {
-          light.setOn(bl_data[1]);
-          light.setEffectByIndex(bl_data[2]);
-          light.setBrightness(bl_data[3]);
+          light.setOn(got_data[1]);
+          light.setEffectByIndex(got_data[2]);
+          light.setBrightness(got_data[3]);
           switch (light.getEffectIndex()) {
             case 0: {
-              light.setEffectColor(bl_data[4]);
+              light.setEffectColor(got_data[4]);
               break;
             }
 
@@ -140,7 +170,7 @@ void loop() {
             }
 
             case 2: {
-              light.setEffectSpeed(bl_data[4]);
+              light.setEffectSpeed(got_data[4]);
               break;
             }
           }
@@ -150,31 +180,37 @@ void loop() {
     }
 
     else {
-      byte pipeNo;
-      if (radio.available(&pipeNo)) { // слушаем эфир со всех труб
-        radio.read(&got_data, sizeof(got_data)); // читаем входящий сигнал
-        if (millis() - send_timer > 2000) { // Отправляем данные обратно каждые 2 секунды
-          radio.writeAckPayload(1, &send_data, sizeof(send_data));
-          send_timer = millis();
-        }
+      // Выключаем мотор
+      motor.setMode(Motor::mOff);
+      motor.setPower(0);
+    }
 
-        radio_timer = millis(); // Сбрасываем таймер подключения
 
-        motor.setPower(got_data[0]);  // Данные о положение потенциометра
-        motor.setMode(got_data[1]); // Данные о выбранном режиме
-        light.setOn(got_data[2]);
+    //   byte pipeNo;
+    //   if (radio.available(&pipeNo)) { // слушаем эфир со всех труб
+    //     radio.read(&got_data, sizeof(got_data)); // читаем входящий сигнал
+    //     if (millis() - send_timer > 2000) { // Отправляем данные обратно каждые 2 секунды
+    //       radio.writeAckPayload(1, &send_data, sizeof(send_data));
+    //       send_timer = millis();
+    //     }
 
-        send_data[0] = 20; // Отправляем данные о заряде
-        send_data[1] = motor.getTemp(); // Отправляем данные о температуре
-      }
+    //     radio_timer = millis(); // Сбрасываем таймер подключения
 
-      if (millis() - radio_timer > 5000) { // Если данные от пульта не поступали больше 5 секунд
-        // Выключаем мотор
-        motor.setMode(Motor::mOff);
-        motor.setPower(0);
-        radio_timer = millis();
-      }
-    } 
+    //     motor.setPower(got_data[0]);  // Данные о положение потенциометра
+    //     motor.setMode(got_data[1]); // Данные о выбранном режиме
+    //     light.setOn(got_data[2]);
+
+    //     send_data[0] = 20; // Отправляем данные о заряде
+    //     send_data[1] = motor.getTemp(); // Отправляем данные о температуре
+    //   }
+
+    //   if (millis() - radio_timer > 5000) { // Если данные от пульта не поступали больше 5 секунд
+    //     // Выключаем мотор
+    //     motor.setMode(Motor::mOff);
+    //     motor.setPower(0);
+    //     radio_timer = millis();
+    //   }
+    // } 
   }
 
   // Режим настроек
