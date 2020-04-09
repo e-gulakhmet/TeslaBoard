@@ -17,19 +17,17 @@ SettingMode sett_mode;
 
 int got_data[6];
 byte send_data[3];
-int bl_data[6];
 bool is_connect;
 
 bool is_setting;
+bool is_bluetooth;
+bool is_radio;
 unsigned long send_timer;
-unsigned long connect_timer;
-
 
 
 // TODO: Сделать настойку режимов мотора
 // TODO: Настройка максмальной температуры мотора
 // TODO: Добавить сохранение данных в EEPROM
-// TODO: Изменить управление скейтом так, чтобы мы могли использовать один общий массив
 
 
 
@@ -44,51 +42,62 @@ void parse() {
 
   byte pipeNo;
   static uint8_t index;
-  String string_convert = "";
+  static String string_convert = "";
   static boolean getStarted;
-
-
-  if (blSerial.available() > 0) {
-    Serial.println("bluetooth_connected");
-    char incomingByte = blSerial.read(); // обязательно ЧИТАЕМ входящий символ
-    if (getStarted) { // если приняли начальный символ (парсинг разрешён)
-      if (incomingByte != ' ' && incomingByte != ';') { // если это не пробел И не конец
-        string_convert += incomingByte; // складываем в строку
+  static unsigned long connect_timer;
+  if (!is_radio) {
+    if (blSerial.available() > 0) {
+      char incomingByte = blSerial.read();        // обязательно ЧИТАЕМ входящий символ
+      if (getStarted) {                         // если приняли начальный символ (парсинг разрешён)
+        if (incomingByte != ' ' && incomingByte != ';') {   // если это не пробел И не конец
+          string_convert += incomingByte;       // складываем в строку
+        }
+        else {                                // если это пробел или ; конец пакета
+          got_data[index] = string_convert.toInt();  // преобразуем строку в int и кладём в массив
+          string_convert = "";                 // очищаем строку
+          index++;                              // переходим к парсингу следующего элемента массива
+        }
       }
-      else { // если это пробел или ; конец пакета
-        got_data[index] = string_convert.toInt(); // преобразуем строку в int и кладём в массив
-        string_convert = ""; // очищаем строку
-        index++; // переходим к парсингу следующего элемента массива
+      if (incomingByte == '$') {                // если это $
+        getStarted = true;                      // поднимаем флаг, что можно парсить
+        index = 0;                              // сбрасываем индекс
+        string_convert = "";                    // очищаем строку
       }
-    }
-    if (incomingByte == '$') { // если это $
-      getStarted = true; // поднимаем флаг, что можно парсить
-      index = 0; // сбрасываем индекс
-      string_convert = ""; // очищаем строку
-    }
-    if (incomingByte == ';') { // если таки приняли ; - конец парсинга
-      getStarted = false; // сброс
-      is_connect = true; // флаг на принятие
-      connect_timer = millis(); 
+      if (incomingByte == ';') {                // если таки приняли ; - конец парсинга
+        getStarted = false;                     // сброс
+        is_bluetooth = true;
+        connect_timer = millis();
+      }
     }
   }
 
-  else if (radio.available(&pipeNo)) { // слушаем эфир со всех труб
-    Serial.println("radio_connected");
-    radio.read(&got_data, sizeof(got_data)); // читаем входящий сигнал
-    if (millis() - send_timer > 2000) { // Отправляем данные обратно каждые 2 секунды
-      radio.writeAckPayload(1, &send_data, sizeof(send_data));
-      send_timer = millis();
+  if (!is_bluetooth) {
+    if (radio.available(&pipeNo)) { // слушаем эфир со всех труб
+      byte radio_data[6];
+      radio.read(&radio_data, sizeof(radio_data)); // читаем входящий сигнал
+      for(uint8_t i = 0; i < 6; i++) {
+        got_data[i] = radio_data[i];
+      }
+
+      if (millis() - send_timer > 2000) { // Отправляем данные обратно каждые 2 секунды
+        radio.writeAckPayload(1, &send_data, sizeof(send_data));
+        send_timer = millis();
+      }
+      connect_timer = millis();
+      is_radio = true;
     }
-    connect_timer = millis();
-    is_connect = true;
   }
   
-  else{
-    if (is_connect && millis() - connect_timer > 5000){
-      is_connect = false;
-      Serial.println("no_connection");
-    }
+  if (is_connect && millis() - connect_timer > 3500){
+    is_bluetooth = false;
+    is_radio = false;
+  }
+
+  if (is_radio || is_bluetooth) {
+    is_connect = true;
+  }
+  else {
+    is_connect = false;
   }
 }
 
@@ -138,12 +147,6 @@ void loop() {
       send_data[0] = 20; // Отправляем данные о заряде
       send_data[1] = motor.getTemp(); // Отправляем данные о температуре
 
-      Serial.print(got_data[0]); Serial.print("   ");
-      Serial.print(got_data[1]); Serial.print("   ");
-      Serial.print(got_data[2]); Serial.print("   ");
-      Serial.print(got_data[3]); Serial.print("   ");
-      Serial.println(got_data[4]);
-
       sett_mode = static_cast<SettingMode>(got_data[0]);
       switch (sett_mode) {
         case smMain: {
@@ -184,33 +187,6 @@ void loop() {
       motor.setMode(Motor::mOff);
       motor.setPower(0);
     }
-
-
-    //   byte pipeNo;
-    //   if (radio.available(&pipeNo)) { // слушаем эфир со всех труб
-    //     radio.read(&got_data, sizeof(got_data)); // читаем входящий сигнал
-    //     if (millis() - send_timer > 2000) { // Отправляем данные обратно каждые 2 секунды
-    //       radio.writeAckPayload(1, &send_data, sizeof(send_data));
-    //       send_timer = millis();
-    //     }
-
-    //     radio_timer = millis(); // Сбрасываем таймер подключения
-
-    //     motor.setPower(got_data[0]);  // Данные о положение потенциометра
-    //     motor.setMode(got_data[1]); // Данные о выбранном режиме
-    //     light.setOn(got_data[2]);
-
-    //     send_data[0] = 20; // Отправляем данные о заряде
-    //     send_data[1] = motor.getTemp(); // Отправляем данные о температуре
-    //   }
-
-    //   if (millis() - radio_timer > 5000) { // Если данные от пульта не поступали больше 5 секунд
-    //     // Выключаем мотор
-    //     motor.setMode(Motor::mOff);
-    //     motor.setPower(0);
-    //     radio_timer = millis();
-    //   }
-    // } 
   }
 
   // Режим настроек
