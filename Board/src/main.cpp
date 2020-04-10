@@ -171,6 +171,7 @@ void loop() {
     }
     
     case smLight: {
+      light.setOn(got_data[1]);
       light.setEffectByIndex(got_data[2]);
       light.setBrightness(got_data[3]);
       switch (light.getEffectIndex()) {
@@ -188,8 +189,24 @@ void loop() {
           light.setEffectSpeed(got_data[4]);
           break;
         }
+
+        case 3: {
+          light.setEffectSpeed(got_data[4]);
+          break;
+        }
+
+        case 4: {
+          light.setEffectSpeed(got_data[4]);
+          break;
+        }
       }
       break;
     }
+
+    case smMotorSpec: {
+      motor.setMaxTemp(got_data[1]);
+      break;
+    }
+
   }
 }
