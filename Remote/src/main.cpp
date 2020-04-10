@@ -155,7 +155,7 @@ void loop() {
   send_data[0] = 0; // Режим, который показывает, какой режим мы настр
   send_data[1] = motor_mode; // Индекс режима мотора
   send_data[2] = power; // Данные о положении потенциометра
-  send_data[3] = 0;
+  send_data[3] = is_light;
   send_data[4] = 0;
   send_data[5] = 0;
 

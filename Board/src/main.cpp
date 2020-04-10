@@ -36,9 +36,6 @@ void parse() {
   // Если данные не приходять в течении 5 секунд и is_connect = true, то is_connect = false;
   // Если is_connect = false, но данные пришли, то сбрасываем таймер и говорим, что is_connect = true;
   // Сбрасываем таймер при каждом получении данных
-  // if(данные от блютуза)
-  // else if (данные от радио-передатчика)
-  // else: Ждем 5 секунд и говорим что is_connect = false
 
   byte pipeNo;
   static uint8_t index;
@@ -93,12 +90,7 @@ void parse() {
     is_radio = false;
   }
 
-  if (is_radio || is_bluetooth) {
-    is_connect = true;
-  }
-  else {
-    is_connect = false;
-  }
+  is_connect = is_radio || is_bluetooth;
 }
 
 
@@ -141,60 +133,63 @@ void loop() {
   light.update();
   motor.update();
 
-  if (!is_setting) {
-    if (is_connect) {
+  // Режим настроек
+  if (is_setting) {
+    // В режиме настроек включаем спорт режим
+    motor.setMode(Motor::mSport); // Максимальная чувствительность
 
-      send_data[0] = 20; // Отправляем данные о заряде
-      send_data[1] = motor.getTemp(); // Отправляем данные о температуре
+    motor.setPower(digitalRead(BUTT_PIN) == 0 ? 255 : 0);
+    // if (digitalRead(BUTT_PIN) == 0)
+    //   motor.setPower(255);
+    // else
+    //   motor.setPower(0);
+    
+    return;
+  }
 
-      sett_mode = static_cast<SettingMode>(got_data[0]);
-      switch (sett_mode) {
-        case smMain: {
-          motor.setMode(got_data[1]);
-          int value = map(got_data[2], 20, 480, 0, 255);
-          value = constrain(value, 0, 255);
-          motor.setPower(value);
+  if (!is_connect) {
+    // Выключаем мотор
+    motor.setMode(Motor::mOff);
+    motor.setPower(0);
+
+    return;
+  }
+
+
+  send_data[0] = 20; // Отправляемые данные о заряде
+  send_data[1] = motor.getTemp(); // Отправляемые данные о температуре
+
+  sett_mode = static_cast<SettingMode>(got_data[0]);
+  switch (sett_mode) {
+    case smMain: {
+      motor.setMode(got_data[1]);
+      int value = map(got_data[2], 20, 480, 0, 255);
+      value = constrain(value, 0, 255);
+      motor.setPower(value);
+      light.setOn(got_data[3]);
+      break;
+    }
+    
+    case smLight: {
+      light.setEffectByIndex(got_data[2]);
+      light.setBrightness(got_data[3]);
+      switch (light.getEffectIndex()) {
+        case 0: {
+          light.setEffectColor(got_data[4]);
           break;
         }
-        
-        case smLight: {
-          light.setOn(got_data[1]);
-          light.setEffectByIndex(got_data[2]);
-          light.setBrightness(got_data[3]);
-          switch (light.getEffectIndex()) {
-            case 0: {
-              light.setEffectColor(got_data[4]);
-              break;
-            }
 
-            case 1: {
-              light.setLightsBlink(4);
-              break;
-            }
+        case 1: {
+          light.setLightsBlink(4);
+          break;
+        }
 
-            case 2: {
-              light.setEffectSpeed(got_data[4]);
-              break;
-            }
-          }
+        case 2: {
+          light.setEffectSpeed(got_data[4]);
           break;
         }
       }
+      break;
     }
-
-    else {
-      // Выключаем мотор
-      motor.setMode(Motor::mOff);
-      motor.setPower(0);
-    }
-  }
-
-  // Режим настроек
-  else { // В режиме настроек включаем спорт режим
-    motor.setMode(Motor::mSport); // Максимальная чувствительность
-    if (digitalRead(BUTT_PIN) == 0)
-      motor.setPower(255);
-    else
-      motor.setPower(0);
   }
 }
