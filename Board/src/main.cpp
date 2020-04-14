@@ -25,10 +25,7 @@ bool is_radio;
 unsigned long send_timer;
 
 
-// TODO: Сделать настойку режимов мотора
-// TODO: Настройка максмальной температуры мотора
 // TODO: Добавить сохранение данных в EEPROM
-
 
 
 void parse() {
@@ -175,36 +172,41 @@ void loop() {
       light.setEffectByIndex(got_data[2]);
       light.setBrightness(got_data[3]);
       switch (light.getEffectIndex()) {
-        case 0: {
+        case 0:
           light.setEffectColor(got_data[4]);
           break;
-        }
 
-        case 1: {
+        case 1:
           light.setLightsBlink(4);
           break;
-        }
 
-        case 2: {
+        case 2:
           light.setEffectSpeed(got_data[4]);
           break;
-        }
 
-        case 3: {
+        case 3:
           light.setEffectSpeed(got_data[4]);
           break;
-        }
 
-        case 4: {
+        case 4:
           light.setEffectSpeed(got_data[4]);
           break;
-        }
       }
       break;
     }
 
     case smMotorSpec: {
       motor.setMaxTemp(got_data[1]);
+      switch (got_data[2]) {
+        case 0:
+          motor.setEcoModeSpec(got_data[3], got_data[4]);
+          break;
+
+        case 1:
+          motor.setNormalModeSpec(got_data[3], got_data[4]);
+          break;
+      }
+      
       break;
     }
 

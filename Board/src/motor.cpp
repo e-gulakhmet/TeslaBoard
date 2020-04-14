@@ -102,3 +102,17 @@ void Motor::setMaxTemp(uint8_t max_temp) {
     else
         max_temp_ = 80;
 }
+
+
+
+void Motor::setEcoModeSpec(uint8_t delay, uint8_t max_power) {
+    motor_spec_[1].delay = constrain(delay, 0, 500);
+    motor_spec_[1].max_power = map(constrain(max_power, 0, 2550), 0, 255, 800, 2300);
+}
+
+
+
+void Motor::setNormalModeSpec(uint8_t delay, uint8_t max_power) {
+    motor_spec_[2].delay = constrain(delay, 0, 500);
+    motor_spec_[2].max_power = map(constrain(max_power, 0, 255), 0, 255, 800, 2300);
+}

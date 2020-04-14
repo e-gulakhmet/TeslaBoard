@@ -30,11 +30,9 @@ class Motor {
         void switchMode(bool clockwice); // Переключение текущего режима по часовой стрелке или против
         void setMaxTemp(uint8_t max_temp);
 
-        void setEcoModeDelay(uint8_t delay);
-        void setEcoModeMaxPower(uint8_t max_power);
+        void setEcoModeSpec(uint8_t delay, uint8_t max_power);
 
-        void setNormalModeDelay(uint8_t delay);
-        void setNormalModeMaxPower(uint8_t max_power);
+        void setNormalModeSpec(uint8_t delay, uint8_t max_power);
 
         uint8_t getModeIndex() {return mode_;} // Получаем номер текущего режима
         uint8_t getPower() {return power_;} // Получаем текущюю скорость
