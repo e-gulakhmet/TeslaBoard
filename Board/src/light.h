@@ -30,7 +30,7 @@ class Light {
         uint8_t getEffectIndex() {return static_cast<int>(mode_);} // Получения индекса режима подсветки
         uint8_t getBrightness() {return leds_.getBrightness();} // Получение яркости
         uint8_t getEffectColor() {return color_index_;}; // Получение цвета режимов
-        int getEffectSpeed() {return speed_;} // Получение значение скорости эффектов
+        uint8_t getEffectSpeed() {return speed_;} // Получение значение скорости эффектов
     
     private:
         uint8_t data_pin_;

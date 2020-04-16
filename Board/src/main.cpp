@@ -3,6 +3,7 @@
 #include <nRF24L01.h>
 #include <RF24.h>
 #include <SoftwareSerial.h>
+#include <EEPROM.h>
 
 #include "motor.h"
 #include "main.h"
@@ -23,6 +24,7 @@ bool is_setting;
 bool is_bluetooth;
 bool is_radio;
 unsigned long send_timer;
+bool is_saved;
 
 
 // TODO: Добавить сохранение данных в EEPROM
@@ -121,6 +123,15 @@ void setup() {
   if (digitalRead(A0) == 0) {
     is_setting = true;
   }
+
+  light.setEffectByIndex(EEPROM.read(edLightMode));
+  light.setBrightness(EEPROM.read(edLightBrightness));
+  light.setEffectColor(EEPROM.read(edLightColor));
+  light.setEffectSpeed(EEPROM.read(edLightSpeed));
+  motor.setMaxTemp(EEPROM.read(edMotorMaxTemp));
+  uint8_t eco_spec[2];
+  EEPROM.get(edMotorEcoModeSpec, eco_spec);
+  motor.setEcoModeSpec(eco_spec[0], eco_spec[1]);
 }
 
 
@@ -208,6 +219,23 @@ void loop() {
       }
       
       break;
+    }
+
+    case smSetting: {
+      if (got_data[1] == 1) {
+        if (!is_saved) {
+          EEPROM.update(edLightMode, light.getEffectIndex());
+          EEPROM.update(edLightBrightness, light.getBrightness());
+          EEPROM.update(edLightColor, light.getEffectColor());
+          EEPROM.update(edLightSpeed, light.getEffectSpeed());
+          EEPROM.update(edMotorMaxTemp, motor.getMaxTemp());
+          EEPROM.put(edMotorEcoModeSpec, motor.getEcoModeSpec());
+          is_saved = true;
+        }
+      }
+      else {
+        is_saved = false;
+      }
     }
 
   }

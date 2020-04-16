@@ -16,7 +16,17 @@ const uint8_t BL_TX = 7;
 typedef enum {
     smMain = 0,
     smLight,
-    smMotorSpec
+    smMotorSpec,
+    smSetting
 } SettingMode;
+
+typedef enum {
+    edLightMode,
+    edLightBrightness,
+    edLightColor,
+    edLightSpeed,
+    edMotorMaxTemp,
+    edMotorEcoModeSpec,
+} EepromData;
 
 #endif // _MAIN_H_
