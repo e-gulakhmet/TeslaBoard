@@ -26,7 +26,10 @@ typedef enum {
     edLightColor,
     edLightSpeed,
     edMotorMaxTemp,
-    edMotorEcoModeSpec,
+    edMotorEcoModeDelay,
+    edMotorEcoModeMaxPower,
+    edMotorNormalModeDelay,
+    edMotorNormalModeMaxPower,
 } EepromData;
 
 #endif // _MAIN_H_

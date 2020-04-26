@@ -116,10 +116,3 @@ void Motor::setNormalModeSpec(uint8_t delay, uint8_t max_power) {
     motor_spec_[2].delay = constrain(delay, 0, 500);
     motor_spec_[2].max_power = map(constrain(max_power, 0, 255), 0, 255, 800, 2300);
 }
-
-
-
-uint8_t Motor::getEcoModeSpec() {
-    uint8_t spec[2] = {motor_spec_[1].delay, map(motor_spec_[1].max_power, 800, 2300, 0, 255)};
-    return spec[2];
-}

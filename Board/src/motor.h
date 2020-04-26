@@ -39,10 +39,11 @@ class Motor {
         uint8_t getTemp() {return temp_;} // Получаем данные о температуре драйвера
         uint8_t getMaxTemp() {return max_temp_;}
 
-        uint8_t getEcoModeSpec();
+        uint8_t getEcoModeDelay() {return motor_spec_[mComfort].delay;}
+        uint8_t getEcoModeMaxPower() {return map(motor_spec_[mComfort].max_power, 800, 2300, 0, 255);}  
 
         uint8_t getNormalModeDelay() {return motor_spec_[mNormal].delay;}
-        uint8_t getNormalModeMaxPower() {return motor_spec_[mNormal].max_power;};        
+        uint8_t getNormalModeMaxPower() {return map(motor_spec_[mNormal].max_power, 800, 2300, 0, 255);}     
 
     private:
         uint8_t motor_pin_;

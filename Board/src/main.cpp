@@ -123,15 +123,25 @@ void setup() {
   if (digitalRead(A0) == 0) {
     is_setting = true;
   }
+  Serial.print(EEPROM.read(edLightMode)); Serial.print("   ");
+  Serial.print(EEPROM.read(edLightBrightness)); Serial.print("   ");
+  Serial.print(EEPROM.read(edLightColor)); Serial.print("   ");
+  Serial.print(EEPROM.read(edLightSpeed)); Serial.print("   ");
+  Serial.print(EEPROM.read(edMotorMaxTemp)); Serial.print("   ");
+  Serial.print(EEPROM.read(edMotorEcoModeDelay)); Serial.print("   ");
+  Serial.print(EEPROM.read(edMotorEcoModeMaxPower)); Serial.print("   ");
+  Serial.print(EEPROM.read(edMotorNormalModeDelay)); Serial.print("   ");
+  Serial.println(EEPROM.read(edMotorNormalModeMaxPower));
 
+  
   light.setEffectByIndex(EEPROM.read(edLightMode));
   light.setBrightness(EEPROM.read(edLightBrightness));
   light.setEffectColor(EEPROM.read(edLightColor));
   light.setEffectSpeed(EEPROM.read(edLightSpeed));
   motor.setMaxTemp(EEPROM.read(edMotorMaxTemp));
-  uint8_t eco_spec[2];
-  EEPROM.get(edMotorEcoModeSpec, eco_spec);
-  motor.setEcoModeSpec(eco_spec[0], eco_spec[1]);
+  motor.setEcoModeSpec(EEPROM.read(edMotorEcoModeDelay), EEPROM.read(edMotorEcoModeMaxPower));
+  motor.setNormalModeSpec(EEPROM.read(edMotorNormalModeDelay), EEPROM.read(edMotorNormalModeMaxPower));
+  Serial.println("data_was_loaded");
 }
 
 
@@ -229,7 +239,11 @@ void loop() {
           EEPROM.update(edLightColor, light.getEffectColor());
           EEPROM.update(edLightSpeed, light.getEffectSpeed());
           EEPROM.update(edMotorMaxTemp, motor.getMaxTemp());
-          EEPROM.put(edMotorEcoModeSpec, motor.getEcoModeSpec());
+          EEPROM.update(edMotorEcoModeDelay, motor.getEcoModeDelay());
+          EEPROM.update(edMotorEcoModeMaxPower, motor.getEcoModeMaxPower());
+          EEPROM.update(edMotorNormalModeDelay, motor.getNormalModeDelay());
+          EEPROM.update(edMotorNormalModeMaxPower, motor.getNormalModeMaxPower());
+          Serial.println("saved");
           is_saved = true;
         }
       }
