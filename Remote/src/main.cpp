@@ -55,12 +55,9 @@ void showDisp() {
   if (millis() - disp_timer < 2000)
     return;
 
-  disp_timer = millis();
-  // Обновляем экран два раза в секунду.
-  display.fillScreen(LOW);
-  display.setTextColor(WHITE, BLACK);
-  display.setTextSize(1);
 
+  disp_timer = millis();
+  display.clearDisplay();
   // Отображаем информацию о пульте
   // Рисуем батарею
   display.drawRect(0, 0, 20, 10, HIGH); display.fillRect(20, 2, 2, 6, HIGH);
@@ -122,6 +119,8 @@ void setup() {
   radio.powerUp(); //начать работу
   radio.stopListening();  //не слушаем радиоэфир, мы передатчик
 
+  battery.update();
+
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   display.clearDisplay();
   display.setTextSize(3);
@@ -134,32 +133,26 @@ void setup() {
   delay(2000);
   display.clearDisplay();
   display.display();
+  display.setTextColor(WHITE, BLACK);
+  display.setTextSize(1);
 }
 
 
 
 void loop() {
   button.tick();
-  if (millis() - battery_timer > 60000) {
+  if (millis() - battery_timer > (1*60*1000)) {
     battery_timer = millis();
     battery.update();
   }
 
-  if (is_display && millis() - display_timer > 30000) {
-    is_display = false;
-    display.fillScreen(LOW);
-    display.display();
-  }
-
   // Подготавливаем данные для отправки
   send_data[0] = 0; // Режим, который показывает, какой режим мы настр
-  send_data[1] = motor_mode; // Индекс режима мотора
+  send_data[1] = static_cast<int>(motor_mode); // Индекс режима мотора
   send_data[2] = power; // Данные о положении потенциометра
   send_data[3] = is_light;
   send_data[4] = 0;
   send_data[5] = 0;
-
-  // Добавить отпраление о включении подсветки
 
   // Отправеляем данные
   radio.write(&send_data, sizeof(send_data));
@@ -167,7 +160,6 @@ void loop() {
   // Получаем данные от приемника
    if (radio.isAckPayloadAvailable()) { // Если в буфере имеются принятые данные из пакета подтверждения приёма, то
     radio.read(&got_data, sizeof(got_data)); // Читаем данные из буфера в массив got_data указывая сколько всего байт может поместиться в массив.
-    Serial.println("got");
     connect_timer = millis();
     is_connect = true;
     board_battery = got_data[0];
@@ -176,7 +168,7 @@ void loop() {
 
   power = map(analogRead(A1), 0, 1023, 0, 255); // Данные о положении потенциометра
 
-  if (button.isClick()) { // Если кнопка была нажата два раза
+  if (button.isClick()) { // Если кнопка была нажата
     if (is_display)
       motor_mode = switchMotorMode(motor_mode, true); // Выбираем следущий режим  
     else
@@ -198,5 +190,11 @@ void loop() {
   // Выводим информацию на димплей
   if (is_display) {
     showDisp();
+  }
+
+  if (is_display && millis() - display_timer > 10000) {
+    is_display = false;
+    display.clearDisplay();
+    display.display();
   }
 }

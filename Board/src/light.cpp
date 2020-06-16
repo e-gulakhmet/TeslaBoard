@@ -5,13 +5,14 @@
 Light::Light(uint8_t data_pin, uint8_t num_leds)
     : data_pin_(data_pin)
     , num_leds_(num_leds)
+    , is_on(false)
+    , is_updated(false)
     , brightness_(50)
     , color_index_(0)
     , speed_(20)
-    , is_updated(false)
     , thishue(0)
     , thissat(255)
-    , mode_(emOneColor)
+    , mode_(emLights)
     , leds_(Adafruit_NeoPixel(num_leds_, data_pin_, NEO_GRB + NEO_KHZ800))
     {
 
@@ -150,7 +151,6 @@ void Light::setOn(bool state) {
         is_on = state;
         is_updated = false; // Говорим, что нужно обновить ленту
     }
-
 }
 
 

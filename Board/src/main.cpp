@@ -7,12 +7,12 @@
 
 #include "motor.h"
 #include "main.h"
-#include "light.h"
+// #include "light.h"
 
 RF24 radio(RADIO_CS_PIN, RADIO_CSN_PIN);
 SoftwareSerial blSerial(BL_RX, BL_TX);
 Motor motor(MOTOR_PIN, TEMP_PIN);
-Light light(LEDS_PIN, NUM_LEDS);
+// Light light(LEDS_PIN, NUM_LEDS);
 
 SettingMode sett_mode;
 
@@ -99,7 +99,7 @@ void setup() {
 
   pinMode(BUTT_PIN, INPUT_PULLUP);
 
-  light.begin();
+  // light.begin();
 
   blSerial.begin(9600);
   
@@ -123,45 +123,34 @@ void setup() {
   if (digitalRead(A0) == 0) {
     is_setting = true;
   }
-  Serial.print(EEPROM.read(edLightMode)); Serial.print("   ");
-  Serial.print(EEPROM.read(edLightBrightness)); Serial.print("   ");
-  Serial.print(EEPROM.read(edLightColor)); Serial.print("   ");
-  Serial.print(EEPROM.read(edLightSpeed)); Serial.print("   ");
-  Serial.print(EEPROM.read(edMotorMaxTemp)); Serial.print("   ");
-  Serial.print(EEPROM.read(edMotorEcoModeDelay)); Serial.print("   ");
-  Serial.print(EEPROM.read(edMotorEcoModeMaxPower)); Serial.print("   ");
-  Serial.print(EEPROM.read(edMotorNormalModeDelay)); Serial.print("   ");
-  Serial.println(EEPROM.read(edMotorNormalModeMaxPower));
 
+  // Serial.print(EEPROM.read(edLightMode)); Serial.print("   ");
+  // Serial.print(EEPROM.read(edLightBrightness)); Serial.print("   ");
+  // Serial.print(EEPROM.read(edLightColor)); Serial.print("   ");
+  // Serial.print(EEPROM.read(edLightSpeed)); Serial.print("   ");
+  // Serial.print(EEPROM.read(edMotorMaxTemp)); Serial.print("   ");
   
-  light.setEffectByIndex(EEPROM.read(edLightMode));
-  light.setBrightness(EEPROM.read(edLightBrightness));
-  light.setEffectColor(EEPROM.read(edLightColor));
-  light.setEffectSpeed(EEPROM.read(edLightSpeed));
-  motor.setMaxTemp(EEPROM.read(edMotorMaxTemp));
-  motor.setEcoModeSpec(EEPROM.read(edMotorEcoModeDelay), EEPROM.read(edMotorEcoModeMaxPower));
-  motor.setNormalModeSpec(EEPROM.read(edMotorNormalModeDelay), EEPROM.read(edMotorNormalModeMaxPower));
-  Serial.println("data_was_loaded");
+  // light.setEffectByIndex(EEPROM.read(edLightMode));
+  // light.setBrightness(EEPROM.read(edLightBrightness));
+  // light.setEffectColor(EEPROM.read(edLightColor));
+  // light.setEffectSpeed(EEPROM.read(edLightSpeed));
+  // motor.setMaxTemp(EEPROM.read(edMotorMaxTemp));
+  // Serial.println("data_was_loaded");
 }
 
 
 
 void loop() {
   parse();
-  light.update();
+  // light.update();
   motor.update();
 
   // Режим настроек
   if (is_setting) {
     // В режиме настроек включаем спорт режим
     motor.setMode(Motor::mSport); // Максимальная чувствительность
-
     motor.setPower(digitalRead(BUTT_PIN) == 0 ? 255 : 0);
-    // if (digitalRead(BUTT_PIN) == 0)
-    //   motor.setPower(255);
-    // else
-    //   motor.setPower(0);
-    
+
     return;
   }
 
@@ -181,38 +170,36 @@ void loop() {
   switch (sett_mode) {
     case smMain: {
       motor.setMode(got_data[1]);
-      int value = map(got_data[2], 20, 480, 0, 255);
-      value = constrain(value, 0, 255);
-      motor.setPower(value);
-      light.setOn(got_data[3]);
+      motor.setPower(got_data[2]);
+      // light.setOn(got_data[3]);
       break;
     }
     
     case smLight: {
-      light.setOn(got_data[1]);
-      light.setEffectByIndex(got_data[2]);
-      light.setBrightness(got_data[3]);
-      switch (light.getEffectIndex()) {
-        case 0:
-          light.setEffectColor(got_data[4]);
-          break;
+      // light.setOn(got_data[1]);
+      // light.setEffectByIndex(got_data[2]);
+      // light.setBrightness(got_data[3]);
+      // switch (light.getEffectIndex()) {
+      //   case 0:
+      //     light.setEffectColor(got_data[4]);
+      //     break;
 
-        case 1:
-          light.setLightsBlink(4);
-          break;
+      //   case 1:
+      //     light.setLightsBlink(4);
+      //     break;
 
-        case 2:
-          light.setEffectSpeed(got_data[4]);
-          break;
+      //   case 2:
+      //     light.setEffectSpeed(got_data[4]);
+      //     break;
 
-        case 3:
-          light.setEffectSpeed(got_data[4]);
-          break;
+      //   case 3:
+      //     light.setEffectSpeed(got_data[4]);
+      //     break;
 
-        case 4:
-          light.setEffectSpeed(got_data[4]);
-          break;
-      }
+      //   case 4:
+      //     light.setEffectSpeed(got_data[4]);
+      //     break;
+      // }
       break;
     }
 
@@ -234,15 +221,11 @@ void loop() {
     case smSetting: {
       if (got_data[1] == 1) {
         if (!is_saved) {
-          EEPROM.update(edLightMode, light.getEffectIndex());
-          EEPROM.update(edLightBrightness, light.getBrightness());
-          EEPROM.update(edLightColor, light.getEffectColor());
-          EEPROM.update(edLightSpeed, light.getEffectSpeed());
-          EEPROM.update(edMotorMaxTemp, motor.getMaxTemp());
-          EEPROM.update(edMotorEcoModeDelay, motor.getEcoModeDelay());
-          EEPROM.update(edMotorEcoModeMaxPower, motor.getEcoModeMaxPower());
-          EEPROM.update(edMotorNormalModeDelay, motor.getNormalModeDelay());
-          EEPROM.update(edMotorNormalModeMaxPower, motor.getNormalModeMaxPower());
+          // EEPROM.update(edLightMode, light.getEffectIndex());
+          // EEPROM.update(edLightBrightness, light.getBrightness());
+          // EEPROM.update(edLightColor, light.getEffectColor());
+          // EEPROM.update(edLightSpeed, light.getEffectSpeed());
+          // EEPROM.update(edMotorMaxTemp, motor.getMaxTemp());
           Serial.println("saved");
           is_saved = true;
         }
