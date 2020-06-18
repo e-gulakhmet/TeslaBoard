@@ -30,20 +30,10 @@ class Motor {
         void switchMode(bool clockwice); // Переключение текущего режима по часовой стрелке или против
         void setMaxTemp(uint8_t max_temp);
 
-        void setEcoModeSpec(uint8_t delay, uint8_t max_power);
-
-        void setNormalModeSpec(uint8_t delay, uint8_t max_power);
-
         uint8_t getModeIndex() {return mode_;} // Получаем номер текущего режима
         uint8_t getPower() {return power_;} // Получаем текущюю скорость
         uint8_t getTemp() {return temp_;} // Получаем данные о температуре драйвера
         uint8_t getMaxTemp() {return max_temp_;}
-
-        uint8_t getEcoModeDelay() {return motor_spec_[mComfort].delay;}
-        uint8_t getEcoModeMaxPower() {return map(motor_spec_[mComfort].max_power, 800, 2300, 0, 255);}  
-
-        uint8_t getNormalModeDelay() {return motor_spec_[mNormal].delay;}
-        uint8_t getNormalModeMaxPower() {return map(motor_spec_[mNormal].max_power, 800, 2300, 0, 255);}     
 
     private:
         uint8_t motor_pin_;
@@ -63,8 +53,8 @@ class Motor {
             // 1 - Задержка между изменениями в мс,
             // 2 - Максимальное значение частоты работы мотора(800 - 2300)
             {255, 0, 800},
-            {10, 250, 1200},
-            {10, 200, 1800},
+            {10, 250, 1600},
+            {10, 200, 2300},
             {254, 0, 2300}
         };
 

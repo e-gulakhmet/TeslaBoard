@@ -7,22 +7,23 @@
 
 #include "motor.h"
 #include "main.h"
-// #include "light.h"
 
 RF24 radio(RADIO_CS_PIN, RADIO_CSN_PIN);
 SoftwareSerial blSerial(BL_RX, BL_TX);
 Motor motor(MOTOR_PIN, TEMP_PIN);
-// Light light(LEDS_PIN, NUM_LEDS);
 
-SettingMode sett_mode;
+MainMode mode;
 
 int got_data[6];
 byte send_data[3];
-bool is_connect;
 
-bool is_setting;
-bool is_bluetooth;
-bool is_radio;
+
+// Флаги
+bool is_connect; 
+bool is_setting; // Режим управления через кнопку на плате
+bool is_bluetooth; // Режим управления через блютуз
+bool is_radio; // Режим управеления через радиоуправление
+
 unsigned long send_timer;
 bool is_saved;
 
@@ -43,24 +44,24 @@ void parse() {
   static unsigned long connect_timer;
   if (!is_radio) {
     if (blSerial.available() > 0) {
-      char incomingByte = blSerial.read();        // обязательно ЧИТАЕМ входящий символ
-      if (getStarted) {                         // если приняли начальный символ (парсинг разрешён)
-        if (incomingByte != ' ' && incomingByte != ';') {   // если это не пробел И не конец
-          string_convert += incomingByte;       // складываем в строку
+      char incomingByte = blSerial.read();// обязательно ЧИТАЕМ входящий символ
+      if (getStarted) { // если приняли начальный символ (парсинг разрешён)
+        if (incomingByte != ' ' && incomingByte != ';') { // если это не пробел И не конец
+          string_convert += incomingByte; // складываем в строку
         }
-        else {                                // если это пробел или ; конец пакета
-          got_data[index] = string_convert.toInt();  // преобразуем строку в int и кладём в массив
-          string_convert = "";                 // очищаем строку
-          index++;                              // переходим к парсингу следующего элемента массива
+        else { // если это пробел или ; конец пакета
+          got_data[index] = string_convert.toInt(); // преобразуем строку в int и кладём в массив
+          string_convert = ""; // очищаем строку
+          index++; // переходим к парсингу следующего элемента массива
         }
       }
-      if (incomingByte == '$') {                // если это $
-        getStarted = true;                      // поднимаем флаг, что можно парсить
-        index = 0;                              // сбрасываем индекс
-        string_convert = "";                    // очищаем строку
+      if (incomingByte == '$') { // если это $
+        getStarted = true;  // поднимаем флаг, что можно парсить
+        index = 0; // сбрасываем индекс
+        string_convert = ""; // очищаем строку
       }
-      if (incomingByte == ';') {                // если таки приняли ; - конец парсинга
-        getStarted = false;                     // сброс
+      if (incomingByte == ';') { // если таки приняли ; - конец парсинга
+        getStarted = false; // сброс
         is_bluetooth = true;
         connect_timer = millis();
       }
@@ -79,17 +80,16 @@ void parse() {
         radio.writeAckPayload(1, &send_data, sizeof(send_data));
         send_timer = millis();
       }
+      // Если данные были получены, то обновляем таймер и включаем флаг радио
       connect_timer = millis();
       is_radio = true;
     }
   }
   
-  if (is_connect && millis() - connect_timer > 3500){
+  if ((is_bluetooth || is_radio) && millis() - connect_timer > 3500){
     is_bluetooth = false;
     is_radio = false;
   }
-
-  is_connect = is_radio || is_bluetooth;
 }
 
 
@@ -98,8 +98,6 @@ void setup() {
   Serial.begin(9600);
 
   pinMode(BUTT_PIN, INPUT_PULLUP);
-
-  // light.begin();
 
   blSerial.begin(9600);
   
@@ -120,41 +118,29 @@ void setup() {
 
   motor.begin();
 
+  // Если при включении была нажата кнопка
   if (digitalRead(A0) == 0) {
+    // Переходим в режим управления от кнопки на плате
     is_setting = true;
   }
-
-  // Serial.print(EEPROM.read(edLightMode)); Serial.print("   ");
-  // Serial.print(EEPROM.read(edLightBrightness)); Serial.print("   ");
-  // Serial.print(EEPROM.read(edLightColor)); Serial.print("   ");
-  // Serial.print(EEPROM.read(edLightSpeed)); Serial.print("   ");
-  // Serial.print(EEPROM.read(edMotorMaxTemp)); Serial.print("   ");
-  
-  // light.setEffectByIndex(EEPROM.read(edLightMode));
-  // light.setBrightness(EEPROM.read(edLightBrightness));
-  // light.setEffectColor(EEPROM.read(edLightColor));
-  // light.setEffectSpeed(EEPROM.read(edLightSpeed));
-  // motor.setMaxTemp(EEPROM.read(edMotorMaxTemp));
-  // Serial.println("data_was_loaded");
 }
 
 
 
 void loop() {
   parse();
-  // light.update();
   motor.update();
 
-  // Режим настроек
   if (is_setting) {
-    // В режиме настроек включаем спорт режим
+    // В режиме управления от кнопки включаем спорт режим
     motor.setMode(Motor::mSport); // Максимальная чувствительность
     motor.setPower(digitalRead(BUTT_PIN) == 0 ? 255 : 0);
 
     return;
   }
 
-  if (!is_connect) {
+  // Если не подключены к радио или блютузу
+  if (!is_bluetooth && !is_radio) { 
     // Выключаем мотор
     motor.setMode(Motor::mOff);
     motor.setPower(0);
@@ -162,63 +148,29 @@ void loop() {
     return;
   }
 
-
-  send_data[0] = 20; // Отправляемые данные о заряде
+  // Задаем данные, которые потом будем отправлять в ответ на полученные данных
+  send_data[0] = 20; // Данные о заряде
   send_data[1] = motor.getTemp(); // Отправляемые данные о температуре
 
-  sett_mode = static_cast<SettingMode>(got_data[0]);
-  switch (sett_mode) {
-    case smMain: {
+
+  mode = static_cast<MainMode>(got_data[0]);
+  switch (mode) {
+    case mmMain: {
       motor.setMode(got_data[1]);
       motor.setPower(got_data[2]);
-      // light.setOn(got_data[3]);
       break;
     }
     
-    case smLight: {
-      // light.setOn(got_data[1]);
-      // light.setEffectByIndex(got_data[2]);
-      // light.setBrightness(got_data[3]);
-      // switch (light.getEffectIndex()) {
-      //   case 0:
-      //     light.setEffectColor(got_data[4]);
-      //     break;
-
-      //   case 1:
-      //     light.setLightsBlink(4);
-      //     break;
-
-      //   case 2:
-      //     light.setEffectSpeed(got_data[4]);
-      //     break;
-
-      //   case 3:
-      //     light.setEffectSpeed(got_data[4]);
-      //     break;
-
-      //   case 4:
-      //     light.setEffectSpeed(got_data[4]);
-      //     break;
-      // }
+    case mmLight: {
       break;
     }
 
-    case smMotorSpec: {
-      motor.setMaxTemp(got_data[1]);
-      switch (got_data[2]) {
-        case 0:
-          motor.setEcoModeSpec(got_data[3], got_data[4]);
-          break;
-
-        case 1:
-          motor.setNormalModeSpec(got_data[3], got_data[4]);
-          break;
-      }
-      
+    case mmMotorSpec: {
+      motor.setMaxTemp(got_data[1]);      
       break;
     }
 
-    case smSetting: {
+    case mmSetting: {
       if (got_data[1] == 1) {
         if (!is_saved) {
           // EEPROM.update(edLightMode, light.getEffectIndex());
