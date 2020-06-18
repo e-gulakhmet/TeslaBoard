@@ -2,28 +2,20 @@
 
 
 
-Power::Power(uint8_t power_pin, uint8_t battery_pin)
-    : power_pin_(power_pin)
-    , battery_pin_(battery_pin)
+Power::Power(uint8_t volt_pin)
+    : volt_pin_(volt_pin)
     , is_charging(false)
     , voltage_(0)
     , procent_(0)
     , min_volt_(3.3)
     , max_volt_(4.2)
     {
-        pinMode(power_pin_, INPUT);
-        pinMode(battery_pin_, INPUT);
+        pinMode(volt_pin_, INPUT);
     };
 
 
 
 void Power::update() {
-    if (analogRead(power_pin_) > 600) {
-        is_charging = true;
-    }
-    else{
-        is_charging = false;
-    }    
     // Синхронизируем полученные данные о напряжении с фильтром
     voltage_ = (readAnalog() * readFilterVcc()) / 1023;
     // Получаем процент заряда, зависящий от минимального напряжения и максимального
@@ -95,7 +87,7 @@ float Power::readAnalog() {
     int sortedValues[100];
     for (int i = 0; i < 100; i++) { 
         delay(25);
-        int value = analogRead(battery_pin_);
+        int value = analogRead(volt_pin_);
         int j;
         if (value < sortedValues[0] || i == 0) {
             j = 0; //insert at first position

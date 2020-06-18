@@ -13,15 +13,16 @@
 Adafruit_SSD1306 display = Adafruit_SSD1306(128, 64, &Wire);
 RF24 radio(RADIO_CS_PIN, RADIO_DO_PIN);
 GButton button(BUTT_PIN, HIGH_PULL);
-Power battery(POWER_PIN, BATTERY_PIN);
+Power battery(BATTERY_PIN);
 
 MotorMode motor_mode = mmComfort;
+
+String mode_name[4] = {"OFF", "ECO", "NRML", "SPRT"};
 
 byte send_data[3];
 byte got_data[3];
 bool is_display = true;
 uint8_t power;
-String mode_name[4] = {"Off", "Eco", "Normal", "Sport"};
 uint8_t board_battery;
 uint8_t board_temp;
 unsigned long connect_timer;
@@ -102,24 +103,7 @@ void setup() {
 
   pinMode(POTENT_PIN, INPUT);
 
-  radio.begin(); //активировать модуль
-  radio.setAutoAck(1);         //режим подтверждения приёма, 1 вкл 0 выкл
-  radio.setRetries(0, 15);    //(время между попыткой достучаться, число попыток)
-  radio.enableAckPayload();    //разрешить отсылку данных в ответ на входящий сигнал
-  radio.setPayloadSize(8);     //размер пакета, в байтах
 
-  radio.openWritingPipe(0xF0F0F0F0E1LL);   //мы - труба 0, открываем канал для передачи данных
-  radio.setChannel(0x60);  //выбираем канал (в котором нет шумов!)
-
-  radio.setPALevel (RF24_PA_MAX); //уровень мощности передатчика. На выбор RF24_PA_MIN, RF24_PA_LOW, RF24_PA_HIGH, RF24_PA_MAX
-  radio.setDataRate (RF24_1MBPS); //скорость обмена. На выбор RF24_2MBPS, RF24_1MBPS, RF24_250KBPS
-  //должна быть одинакова на приёмнике и передатчике!
-  //при самой низкой скорости имеем самую высокую чувствительность и дальность!!
-
-  radio.powerUp(); //начать работу
-  radio.stopListening();  //не слушаем радиоэфир, мы передатчик
-
-  battery.update();
 
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   display.clearDisplay();
@@ -130,7 +114,23 @@ void setup() {
   display.setCursor(20, 30);
   display.print("Board");
   display.display();
-  delay(2000);
+
+  battery.update();
+
+  radio.begin(); //активировать модуль
+  radio.setAutoAck(1);         //режим подтверждения приёма, 1 вкл 0 выкл
+  radio.setRetries(0, 15);    //(время между попыткой достучаться, число попыток)
+  radio.enableAckPayload();    //разрешить отсылку данных в ответ на входящий сигнал
+  radio.setPayloadSize(8);     //размер пакета, в байтах
+  radio.openWritingPipe(0xF0F0F0F0E1LL);   //мы - труба 0, открываем канал для передачи данных
+  radio.setChannel(0x60);  //выбираем канал (в котором нет шумов!)
+  radio.setPALevel (RF24_PA_MAX); //уровень мощности передатчика. На выбор RF24_PA_MIN, RF24_PA_LOW, RF24_PA_HIGH, RF24_PA_MAX
+  radio.setDataRate (RF24_1MBPS); //скорость обмена. На выбор RF24_2MBPS, RF24_1MBPS, RF24_250KBPS
+  //должна быть одинакова на приёмнике и передатчике!
+  //при самой низкой скорости имеем самую высокую чувствительность и дальность!!
+  radio.powerUp(); //начать работу
+  radio.stopListening();  //не слушаем радиоэфир, мы передатчик
+
   display.clearDisplay();
   display.display();
   display.setTextColor(WHITE, BLACK);
@@ -141,7 +141,7 @@ void setup() {
 
 void loop() {
   button.tick();
-  if (millis() - battery_timer > (1*60*1000)) {
+  if (millis() - battery_timer > 1*60*1000) {
     battery_timer = millis();
     battery.update();
   }
@@ -149,8 +149,8 @@ void loop() {
   // Подготавливаем данные для отправки
   send_data[0] = 0; // Режим, который показывает, какой режим мы настр
   send_data[1] = static_cast<int>(motor_mode); // Индекс режима мотора
-  send_data[2] = power; // Данные о положении потенциометра
-  send_data[3] = is_light;
+  send_data[2] = power; // Данные о положении потенциометра(0-255)
+  send_data[3] = is_light; // Режим подсветки
   send_data[4] = 0;
   send_data[5] = 0;
 
@@ -160,8 +160,9 @@ void loop() {
   // Получаем данные от приемника
    if (radio.isAckPayloadAvailable()) { // Если в буфере имеются принятые данные из пакета подтверждения приёма, то
     radio.read(&got_data, sizeof(got_data)); // Читаем данные из буфера в массив got_data указывая сколько всего байт может поместиться в массив.
-    connect_timer = millis();
-    is_connect = true;
+    connect_timer = millis(); // Если получили данные, то обновляем таймер подключения
+    is_connect = true; // Говорим, что мы подключены к скейту
+    // Обновляем данные
     board_battery = got_data[0];
     board_temp = got_data[1];
   }
@@ -187,11 +188,12 @@ void loop() {
   }
 
 
-  // Выводим информацию на димплей
+  // Выводим информацию на дисплей
   if (is_display) {
     showDisp();
   }
 
+  // Выключаем дисплей, если кнопки не были нажаты в течении 10 секунд
   if (is_display && millis() - display_timer > 10000) {
     is_display = false;
     display.clearDisplay();

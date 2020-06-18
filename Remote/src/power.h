@@ -10,7 +10,7 @@
 
 class Power{
     public:
-        Power(uint8_t power_pin, uint8_t battery_pin);
+        Power(uint8_t volt_pin);
         void update(); // Собираем информацию
         bool isCharging() {return is_charging;}
         float getVoltage() {return voltage_;}; // Функция получения напряжения
@@ -22,8 +22,7 @@ class Power{
         float readFilterVcc(); // Фильтр для снижения количества шупом
         float readAnalog(); // Функция считывания опорного напряжения
 
-        uint8_t power_pin_;
-        uint8_t battery_pin_;
+        uint8_t volt_pin_;
         bool is_charging;
         float voltage_;
         uint8_t procent_;
